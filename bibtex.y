@@ -36,16 +36,16 @@ var bibs BibTeX
 top : bibtex { bibs = $1 }
     ;
 
-bibtex : /*empty*/       { $$ = NewBibTeX(); }
+bibtex : /*empty*/       { $$ = NewBibTeX() }
        | bibtex bibentry { $1.AddEntry($2); $$ = $1 }
        ;
 
 bibentry : ATSIGN IDENT LBRACE IDENT COMMA tags RBRACE { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
          ;
 
-tag : IDENT EQUAL        IDENT        { $$ = &bibTag{key: $1, val: $3}; }
-    | IDENT EQUAL LBRACE IDENT RBRACE { $$ = &bibTag{key: $1, val: $4}; }
-    | IDENT EQUAL DQUOTE IDENT DQUOTE { $$ = &bibTag{key: $1, val: $4}; }
+tag : IDENT EQUAL        IDENT        { $$ = &bibTag{key: $1, val: $3} }
+    | IDENT EQUAL LBRACE IDENT RBRACE { $$ = &bibTag{key: $1, val: $4} }
+    | IDENT EQUAL DQUOTE IDENT DQUOTE { $$ = &bibTag{key: $1, val: $4} }
     ;
 
 tags : tag            { $$ = []*bibTag{$1} }

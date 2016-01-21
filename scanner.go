@@ -78,6 +78,8 @@ func (s *Scanner) scanIdent() (tok Token, lit string) {
 	for {
 		if ch := s.read(); ch == eof {
 			break
+		} else if ch == ' ' { // Continue with spaces
+			_, _ = buf.WriteRune(ch)
 		} else if !isAlphanum(ch) {
 			s.unread()
 			break

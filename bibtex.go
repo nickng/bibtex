@@ -5,6 +5,7 @@ package bibtex // go get github.com/nickng/bibtex
 import (
 	"bytes"
 	"fmt"
+	"strings"
 )
 
 // BibEntry is a record of BibTeX record.
@@ -29,16 +30,20 @@ func (bib *BibTeX) AddEntry(entry *BibEntry) {
 
 // NewBibEntry creates a new BibTeX entry.
 func NewBibEntry(entryType string, citeName string) *BibEntry {
+	spaceStripper := strings.NewReplacer(" ", "")
+	cleanedType := strings.ToLower(spaceStripper.Replace(entryType))
+	cleanedName := spaceStripper.Replace(citeName)
+
 	return &BibEntry{
-		Type:     entryType,
-		CiteName: citeName,
+		Type:     cleanedType,
+		CiteName: cleanedName,
 		Fields:   map[string]string{},
 	}
 }
 
 // AddField adds a field (key-value) to a BibTeX entry.
 func (entry *BibEntry) AddField(name string, value string) {
-	entry.Fields[name] = value
+	entry.Fields[strings.TrimSpace(name)] = strings.TrimSpace(value)
 }
 
 // String prints a BibTeX data structure as a BibTeX string.
