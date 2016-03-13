@@ -11,4 +11,4 @@ To run:
     go generate
     go build
     go test
-    go run cmd/bibtex.go < example/simple.bib
+    go run parser/main.go < example/simple.bib

@@ -14,9 +14,10 @@ func TestBasic(t *testing.T) {
 
 	expected := `@article{abcd1234,
   title = {{HelloWorld}}
-}`
+}
+`
 	if bibtex.String() != expected {
-		fmt.Printf("%s\n", bibtex.String())
+		fmt.Printf("%s\n%s\n", bibtex.String(), expected)
 		t.Error("Output does not match.")
 	}
 }
@@ -31,9 +32,10 @@ func TestSpaces(t *testing.T) {
 
 	expected := `@article{abcd1234,
   title = {{Hello World}}
-}`
+}
+`
 	if bibtex.String() != expected {
-		fmt.Printf("%s\n", bibtex.String())
+		fmt.Printf("%s\n%s\n", bibtex.String(), expected)
 		t.Error("Output does not match.")
 	}
 }

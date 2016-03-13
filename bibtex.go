@@ -58,6 +58,5 @@ func (bib BibTeX) String() string {
 		bibtex.Truncate(bibtex.Len() - 2)
 		bibtex.WriteString(fmt.Sprintf("\n}\n"))
 	}
-	bibtex.Truncate(bibtex.Len() - 1)
 	return bibtex.String()
 }

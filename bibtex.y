@@ -24,7 +24,7 @@ var bibs BibTeX
 	bibtags  []*bibTag
 }
 
-%token ATSIGN LBRACE COLON EQUAL COMMA DQUOTE RBRACE
+%token ATSIGN LBRACE COLON EQUAL COMMA RBRACE
 %token <str> IDENT
 %type <bibentry> bibentry
 %type <biblist> bibtex
@@ -43,9 +43,8 @@ bibtex : /*empty*/       { $$ = NewBibTeX() }
 bibentry : ATSIGN IDENT LBRACE IDENT COMMA tags RBRACE { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
          ;
 
-tag : IDENT EQUAL        IDENT        { $$ = &bibTag{key: $1, val: $3} }
-    | IDENT EQUAL LBRACE IDENT RBRACE { $$ = &bibTag{key: $1, val: $4} }
-    | IDENT EQUAL DQUOTE IDENT DQUOTE { $$ = &bibTag{key: $1, val: $4} }
+tag :                   { }
+    | IDENT EQUAL IDENT { $$ = &bibTag{key: $1, val: $3} }
     ;
 
 tags : tag            { $$ = []*bibTag{$1} }
