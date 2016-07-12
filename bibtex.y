@@ -1,10 +1,8 @@
 %{
-
 package bibtex
 
 import (
-	"bufio"
-	"os"
+	"io"
 )
 
 type bibTag struct {
@@ -13,11 +11,10 @@ type bibTag struct {
 }
 
 var bibs BibTeX
-
 %}
 
 %union {
-	str      string
+	strval   string
 	bibentry *BibEntry
 	biblist  BibTeX
 	bibtag   *bibTag
@@ -25,7 +22,7 @@ var bibs BibTeX
 }
 
 %token ATSIGN LBRACE COLON EQUAL COMMA RBRACE
-%token <str> IDENT
+%token <strval> IDENT
 %type <bibentry> bibentry
 %type <biblist> bibtex
 %type <bibtag> tag
@@ -53,7 +50,8 @@ tags : tag            { $$ = []*bibTag{$1} }
 
 %%
 
-func Parse(in *os.File) *BibTeX {
-    bibtexParse(NewLexer(bufio.NewReader(in)))
+// Parse is the entry point to the bibtex parser.
+func Parse(r io.Reader) *BibTeX {
+    bibtexParse(NewLexer(r))
     return &bibs
 }

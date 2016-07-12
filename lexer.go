@@ -1,4 +1,4 @@
-//go:generate go tool yacc -p bibtex bibtex.y
+//go:generate go tool yacc -p bibtex -o bibtex.y.go bibtex.y
 
 package bibtex
 
@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-// Lexer for bibtex
+// Lexer for bibtex.
 type Lexer struct {
 	scanner *Scanner
 }
@@ -19,12 +19,12 @@ func NewLexer(r io.Reader) *Lexer {
 
 // Lex is provided for yacc-compatible parser.
 func (l *Lexer) Lex(yylval *bibtexSymType) int {
-	tok, lit := l.scanner.Scan()
-	yylval.str = lit
-
-	return int(tok)
+	token, strval := l.scanner.Scan()
+	yylval.strval = strval
+	return int(token)
 }
 
+// Error handles error.
 func (l *Lexer) Error(err string) {
-	log.Printf("parse error: %s", err)
+	log.Fatalf("parse error: %s", err)
 }

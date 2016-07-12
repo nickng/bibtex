@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 
@@ -9,5 +10,6 @@ import (
 )
 
 func main() {
-	fmt.Println(bibtex.Parse(os.Stdin).String())
+	r := bufio.NewReader(os.Stdin)
+	fmt.Println(bibtex.Parse(r).String())
 }
