@@ -1,0 +1,7 @@
+language: go
+go:
+    - 1.6.2
+os:
+    - linux
+script:
+    - go test -v ./...
