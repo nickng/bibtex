@@ -6,21 +6,16 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
+	"strings"
 )
+
+var field bool
 
 // Scanner is a lexical scanner
 type Scanner struct {
 	r *bufio.Reader
 }
-
-const (
-	bibEntryMode = iota
-	bibTagMode
-)
-
-var (
-	mode = bibEntryMode
-)
 
 // NewScanner returns a new instance of Scanner.
 func NewScanner(r io.Reader) *Scanner {
@@ -45,172 +40,142 @@ func (s *Scanner) unread() {
 // Scan returns the next token and literal value.
 func (s *Scanner) Scan() (tok Token, lit string) {
 	ch := s.read()
-
 	if isWhitespace(ch) {
 		s.ignoreWhitespace()
 		ch = s.read()
 	}
-
 	if isAlphanum(ch) {
 		s.unread()
 		return s.scanIdent()
 	}
-
 	switch ch {
 	case eof:
 		return 0, ""
 	case '@':
-		mode = bibEntryMode
 		return ATSIGN, string(ch)
 	case ':':
 		return COLON, string(ch)
 	case ',':
 		return COMMA, string(ch)
 	case '=':
+		field = true
 		return EQUAL, string(ch)
 	case '"':
-		s.unread()
-		return s.scanIdent()
+		return s.scanQuoted()
 	case '{':
-		if mode == bibEntryMode { // The first { in toplevel (bibtexMode)
-			mode = bibTagMode
-			return LBRACE, string(ch)
+		if field {
+			defer func() { field = false }()
+			return s.scanBraced()
 		}
-		s.unread()
-		return s.scanIdent()
+		return LBRACE, string(ch)
 	case '}':
 		return RBRACE, string(ch)
+	case '#':
+		return POUND, string(ch)
+	case ' ':
+		s.ignoreWhitespace()
 	}
 
 	log.Fatal(SyntaxError{What: fmt.Sprintf("Token %c unrecognised\n", ch)})
 	return ILLEGAL, string(ch)
 }
 
-func (s *Scanner) scanQuoted() (tok Token, lit string) {
-	var buf bytes.Buffer
-	var endCh rune
-
-	if ch := s.read(); ch == '{' {
-		endCh = '}'
-	} else if ch == '"' {
-		endCh = '"'
-	}
-
-	for {
-		if ch := s.read(); ch == eof {
-			break
-		} else if isAlphanum(ch) || isWhitespace(ch) || isSymbol(ch) {
-			_, _ = buf.WriteRune(ch)
-		} else if ch == '\\' {
-			s.unread()
-			if escTok, escLit := s.scanEscape(); escTok != ILLEGAL {
-				buf.WriteString(escLit)
-			} else {
-				break
-			}
-		} else if ch == '{' {
-			s.unread()
-			if qTok, qLit := s.scanQuoted(); qTok != ILLEGAL {
-				buf.WriteString(qLit)
-			} else {
-				break
-			}
-		} else if ch == endCh {
-			return IDENT, buf.String()
-		}
-	}
-	return ILLEGAL, buf.String() // Unterminated quote or illegal characters
-}
-
-func (s *Scanner) scanComment() (tok Token, lit string) {
-	var buf bytes.Buffer
-
-	if ch := s.read(); ch != '%' {
-		return ILLEGAL, string(ch)
-	}
-
-	for {
-		if ch := s.read(); ch == eof || ch == '\n' {
-			break
-		} else {
-			_, _ = buf.WriteRune(ch)
-		}
-	}
-	return IDENT, buf.String()
-}
-
-// scanIdent parses a string, could be quoted
+// scanIdent categorises a string to one of three categories.
 func (s *Scanner) scanIdent() (tok Token, lit string) {
-	var buf bytes.Buffer
-
 	switch ch := s.read(); ch {
-	case '"', '{':
-		s.unread()
+	case '"':
 		return s.scanQuoted()
+	case '{':
+		return s.scanBraced()
+	default:
+		s.unread() // Not open quote/brace.
+		return s.scanBare()
 	}
-	s.unread()
+}
 
+func (s *Scanner) scanBare() (Token, string) {
+	var buf bytes.Buffer
 	for {
 		if ch := s.read(); ch == eof {
 			break
-		} else if !isAlphanum(ch) && !isBareSymbol(ch) {
+		} else if !isAlphanum(ch) && !isBareSymbol(ch) || isWhitespace(ch) {
 			s.unread()
 			break
 		} else {
 			_, _ = buf.WriteRune(ch)
 		}
 	}
-	return IDENT, buf.String()
+	str := buf.String()
+	if strings.ToLower(str) == "comment" {
+		return COMMENT, str
+	} else if strings.ToLower(str) == "preamble" {
+		return PREAMBLE, str
+	} else if strings.ToLower(str) == "string" {
+		return STRING, str
+	} else if _, err := strconv.Atoi(str); err == nil { // Special case for numeric
+		return IDENT, str
+	}
+	return BAREIDENT, str
 }
 
-func (s *Scanner) scanEscape() (tok Token, lit string) {
+// scanBraced parses a braced string, like {this}.
+func (s *Scanner) scanBraced() (Token, string) {
 	var buf bytes.Buffer
-
-	buf.WriteRune(s.read()) // escape character '\'
-
-	switch ch := s.read(); ch {
-	case '`', '\'', '^', '"', '~', '=', '.', 'u', 'v', 'H', 't', 'c', 'd', 'b', 'l', 'L':
-		buf.WriteRune(ch)
-		s := buf.String()
-		return IDENT, s
-	case 'a': // aa, ae, oe
-		switch ch2 := s.read(); ch2 {
-		case 'a', 'e', 'o':
-			buf.WriteRune(ch)
-			buf.WriteRune(ch2)
-			return IDENT, buf.String()
+	var macro bool
+	brace := 1
+	for {
+		if ch := s.read(); ch == eof {
+			break
+		} else if ch == '\\' {
+			_, _ = buf.WriteRune(ch)
+			macro = true
+		} else if ch == '{' {
+			_, _ = buf.WriteRune(ch)
+			brace++
+		} else if ch == '}' {
+			brace--
+			macro = false
+			if brace == 0 { // Balances open brace.
+				return IDENT, buf.String()
+			}
+			_, _ = buf.WriteRune(ch)
+		} else if ch == '@' {
+			if macro {
+				_, _ = buf.WriteRune(ch)
+			} else {
+				log.Fatalf("%s: %s", ErrUnexpectedAtsign, buf.String())
+			}
+		} else if isWhitespace(ch) {
+			_, _ = buf.WriteRune(ch)
+			macro = false
+		} else {
+			_, _ = buf.WriteRune(ch)
 		}
-	case 'o':
-		switch ch2 := s.read(); ch2 {
-		case 'e':
-			buf.WriteRune(ch)
-			buf.WriteRune(ch2)
-			return IDENT, buf.String()
-		}
-	case 's': // ss
-		switch ch2 := s.read(); ch2 {
-		case 's':
-			buf.WriteRune(ch)
-			buf.WriteRune(ch2)
-			return IDENT, buf.String()
-		}
-	case 'A': // AA, AE
-		switch ch2 := s.read(); ch2 {
-		case 'A', 'E':
-			buf.WriteRune(ch)
-			buf.WriteRune(ch2)
-			return IDENT, buf.String()
-		}
-	case '{', '}', '\\': // Illegal characters
-		buf.WriteRune(ch)
-		return IDENT, buf.String()
-	default:
-		buf.WriteRune(ch)
 	}
+	return ILLEGAL, buf.String()
+}
 
-	escapeStr := buf.String()
-	log.Println(SyntaxError{What: fmt.Sprintf("Unknown escape string %s\n", escapeStr)})
-	return ILLEGAL, escapeStr
+// scanQuoted parses a quoted string, like "this".
+func (s *Scanner) scanQuoted() (Token, string) {
+	var buf bytes.Buffer
+	brace := 0
+	for {
+		if ch := s.read(); ch == eof {
+			break
+		} else if ch == '{' {
+			brace++
+		} else if ch == '}' {
+			brace--
+		} else if ch == '"' {
+			if brace == 0 { // Matches open quote, unescaped
+				return IDENT, buf.String()
+			}
+			_, _ = buf.WriteRune(ch)
+		} else {
+			_, _ = buf.WriteRune(ch)
+		}
+	}
+	return ILLEGAL, buf.String()
 }
 
 // ignoreWhitespace consumes the current rune and all contiguous whitespace.
