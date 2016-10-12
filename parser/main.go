@@ -4,6 +4,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/nickng/bibtex"
@@ -11,5 +12,9 @@ import (
 
 func main() {
 	r := bufio.NewReader(os.Stdin)
-	fmt.Println(bibtex.Parse(r).String())
+	parsed, err := bibtex.Parse(r)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Print(parsed.PrettyString())
 }
