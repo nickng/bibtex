@@ -193,3 +193,28 @@ func (bib *BibTex) RawString() string {
 	}
 	return bibtex.String()
 }
+
+// PrettyString pretty prints a bibtex.
+func (bib *BibTex) PrettyString() string {
+	var bibtex bytes.Buffer
+	for _, entry := range bib.Entries {
+		bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
+		keylen := 0
+		for key := range entry.Fields {
+			if len(key) > keylen {
+				keylen = len(key)
+			}
+		}
+		for key, val := range entry.Fields {
+			if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
+				bibtex.WriteString(fmt.Sprintf("  %s%s = %d,\n", key, strings.Repeat(" ", keylen-len(key)), i))
+			} else if strings.Index(val.String(), "\"") != -1 {
+				bibtex.WriteString(fmt.Sprintf("  %s%s = {%s},\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
+			} else {
+				bibtex.WriteString(fmt.Sprintf("  %s%s = \"%s\",\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
+			}
+		}
+		bibtex.WriteString("}\n")
+	}
+	return bibtex.String()
+}
