@@ -18,7 +18,7 @@ var bibs = NewBibTex()
 	bibentry *BibEntry
 	bibtag   *bibTag
 	bibtags  []*bibTag
-    strings  BibString
+	strings  BibString
 }
 
 %token COMMENT STRING PREAMBLE
@@ -35,7 +35,7 @@ top : bibtex { }
     ;
 
 bibtex : /* empty */          { }
-	   | bibtex bibentry      { bibs.AddEntry($2) }
+       | bibtex bibentry      { bibs.AddEntry($2) }
        | bibtex commententry  { }
        | bibtex stringentry   { }
        | bibtex preambleentry { }
@@ -75,6 +75,6 @@ tags : tag            { $$ = []*bibTag{$1} }
 
 // Parse is the entry point to the bibtex parser.
 func Parse(r io.Reader) *BibTex {
-    bibtexParse(NewLexer(r))
-    return bibs
+	bibtexParse(NewLexer(r))
+	return bibs
 }
