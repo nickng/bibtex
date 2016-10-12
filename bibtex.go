@@ -1,6 +1,4 @@
-// Package bibtex provides a simple bibtex parser and data structure to
-// represent bibtex records.
-package bibtex // go get github.com/nickng/bibtex
+package bibtex
 
 import (
 	"bytes"
