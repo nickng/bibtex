@@ -3,7 +3,6 @@ package bibtex
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"strconv"
@@ -14,12 +13,13 @@ var field bool
 
 // Scanner is a lexical scanner
 type Scanner struct {
-	r *bufio.Reader
+	r   *bufio.Reader
+	pos TokenPos
 }
 
 // NewScanner returns a new instance of Scanner.
 func NewScanner(r io.Reader) *Scanner {
-	return &Scanner{r: bufio.NewReader(r)}
+	return &Scanner{r: bufio.NewReader(r), pos: TokenPos{Char: 0, Lines: []int{}}}
 }
 
 // read reads the next rune from the buffered reader.
@@ -29,12 +29,24 @@ func (s *Scanner) read() rune {
 	if err != nil {
 		return eof
 	}
+	if ch == '\n' {
+		s.pos.Lines = append(s.pos.Lines, s.pos.Char)
+		s.pos.Char = 0
+	} else {
+		s.pos.Char++
+	}
 	return ch
 }
 
 // unread places the previously read rune back on the reader.
 func (s *Scanner) unread() {
 	_ = s.r.UnreadRune()
+	if s.pos.Char == 0 {
+		s.pos.Char = s.pos.Lines[len(s.pos.Lines)-1]
+		s.pos.Lines = s.pos.Lines[:len(s.pos.Lines)-1]
+	} else {
+		s.pos.Char--
+	}
 }
 
 // Scan returns the next token and literal value.
@@ -75,8 +87,6 @@ func (s *Scanner) Scan() (tok Token, lit string) {
 	case ' ':
 		s.ignoreWhitespace()
 	}
-
-	log.Fatal(SyntaxError{What: fmt.Sprintf("Token %c unrecognised\n", ch)})
 	return ILLEGAL, string(ch)
 }
 

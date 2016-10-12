@@ -2,19 +2,17 @@
 
 package bibtex
 
-import (
-	"io"
-	"log"
-)
+import "io"
 
 // Lexer for bibtex.
 type Lexer struct {
 	scanner *Scanner
+	Errors  chan error
 }
 
 // NewLexer returns a new yacc-compatible lexer.
 func NewLexer(r io.Reader) *Lexer {
-	return &Lexer{scanner: NewScanner(r)}
+	return &Lexer{scanner: NewScanner(r), Errors: make(chan error, 1)}
 }
 
 // Lex is provided for yacc-compatible parser.
@@ -26,5 +24,5 @@ func (l *Lexer) Lex(yylval *bibtexSymType) int {
 
 // Error handles error.
 func (l *Lexer) Error(err string) {
-	log.Fatalf("parse error: %s", err)
+	l.Errors <- &ErrParse{Err: err, Pos: l.scanner.pos}
 }

@@ -70,9 +70,15 @@ const bibtexInitialStackSize = 16
 //line bibtex.y:74
 
 // Parse is the entry point to the bibtex parser.
-func Parse(r io.Reader) *BibTex {
-	bibtexParse(NewLexer(r))
-	return bibs
+func Parse(r io.Reader) (*BibTex, error) {
+	l := NewLexer(r)
+	bibtexParse(l)
+	select {
+	case err := <-l.Errors:
+		return nil, err
+	default:
+		return bibs, nil
+	}
 }
 
 //line yacctab:1

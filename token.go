@@ -1,6 +1,7 @@
 package bibtex
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -13,6 +14,16 @@ const (
 )
 
 var eof = rune(0)
+
+// TokenPos is a pair of coordinate to identify start of token.
+type TokenPos struct {
+	Char  int
+	Lines []int
+}
+
+func (p TokenPos) String() string {
+	return fmt.Sprintf("%d:%d", len(p.Lines)+1, p.Char)
+}
 
 func isWhitespace(ch rune) bool {
 	return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r'

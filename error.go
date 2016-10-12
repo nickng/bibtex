@@ -12,11 +12,12 @@ var (
 	ErrUnknownStringVar = errors.New("Unknown string variable")
 )
 
-// SyntaxError is an error at the scanner level.
-type SyntaxError struct {
-	What string
+// ErrParse is a parse error.
+type ErrParse struct {
+	Pos TokenPos
+	Err string // Error string returned from parser.
 }
 
-func (e SyntaxError) Error() string {
-	return fmt.Sprintf("Syntax error: %s\n", e.What)
+func (e *ErrParse) Error() string {
+	return fmt.Sprintf("Parse failed at %s: %s", e.Pos, e.Err)
 }
