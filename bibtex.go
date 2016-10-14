@@ -208,7 +208,7 @@ func (bib *BibTex) PrettyString() string {
 		for key, val := range entry.Fields {
 			if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
 				bibtex.WriteString(fmt.Sprintf("  %s%s = %d,\n", key, strings.Repeat(" ", keylen-len(key)), i))
-			} else if strings.Index(val.String(), "\"") != -1 {
+			} else if strings.ContainsAny(val.String(), "\"{}") { // Certain characters should be {} quoted.
 				bibtex.WriteString(fmt.Sprintf("  %s%s = {%s},\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
 			} else {
 				bibtex.WriteString(fmt.Sprintf("  %s%s = \"%s\",\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
