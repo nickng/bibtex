@@ -2,7 +2,7 @@
 
 ## `nickng/bibtex` is a bibtex parser and library for Go.
 
-The bibtex format is standardised, this parser follows the descriptions found
+The bibtex format is not standardised, this parser follows the descriptions found
 [here](http://maverick.inria.fr/~Xavier.Decoret/resources/xdkbibtex/bibtex_summary.html).
 Please file any issues with a minimal working example.
 
