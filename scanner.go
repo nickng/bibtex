@@ -122,7 +122,7 @@ func (s *Scanner) scanBare() (Token, string) {
 		return PREAMBLE, str
 	} else if strings.ToLower(str) == "string" {
 		return STRING, str
-	} else if _, err := strconv.Atoi(str); err == nil { // Special case for numeric
+	} else if _, err := strconv.Atoi(str); err == nil && field { // Special case for numeric
 		return IDENT, str
 	}
 	return BAREIDENT, str
