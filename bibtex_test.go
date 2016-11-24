@@ -64,6 +64,7 @@ func TestParser(t *testing.T) {
 	examples := []string{
 		"example/biblatex-examples.bib",
 		"example/embeddedtex.bib",
+		"example/field-error.bib",
 		"example/quoted.bib",
 		"example/simple.bib",
 		"example/space.bib",

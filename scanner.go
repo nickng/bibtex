@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var field bool
+var parseField bool
 
 // Scanner is a lexical scanner
 type Scanner struct {
@@ -68,19 +68,22 @@ func (s *Scanner) Scan() (tok Token, lit string) {
 	case ':':
 		return COLON, string(ch)
 	case ',':
+		parseField = false // reset parseField if reached end of field.
 		return COMMA, string(ch)
 	case '=':
-		field = true
+		parseField = true // set parseField if = sign outside quoted or ident.
 		return EQUAL, string(ch)
 	case '"':
 		return s.scanQuoted()
 	case '{':
-		if field {
-			defer func() { field = false }()
+		if parseField {
 			return s.scanBraced()
 		}
 		return LBRACE, string(ch)
 	case '}':
+		if parseField { // reset parseField if reached end of entry.
+			parseField = false
+		}
 		return RBRACE, string(ch)
 	case '#':
 		return POUND, string(ch)
@@ -122,7 +125,7 @@ func (s *Scanner) scanBare() (Token, string) {
 		return PREAMBLE, str
 	} else if strings.ToLower(str) == "string" {
 		return STRING, str
-	} else if _, err := strconv.Atoi(str); err == nil && field { // Special case for numeric
+	} else if _, err := strconv.Atoi(str); err == nil && parseField { // Special case for numeric
 		return IDENT, str
 	}
 	return BAREIDENT, str
