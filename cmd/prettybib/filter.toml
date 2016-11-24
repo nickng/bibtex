@@ -1,0 +1,12 @@
+# Default filter config
+
+[bibtype.inproceedings]
+required = [ "author", "booktitle", "title", "year", "publisher", "series", "volume" ]
+remove   = [ "address", "doi", "editor", "file", "isbn", "url" ]
+
+[bibtype.article]
+required = [ "author", "journal", "title", "year" ]
+remove   = [ "doi", "isbn", "url" ]
+
+[bibtype.misc]
+required = [ "key", "title" ]
