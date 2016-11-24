@@ -42,7 +42,7 @@ func isAlphanum(ch rune) bool {
 }
 
 func isBareSymbol(ch rune) bool {
-	return strings.ContainsRune("-_:./", ch)
+	return strings.ContainsRune("-_:./+", ch)
 }
 
 // isSymbol returns true if ch is a valid symbol
