@@ -30,7 +30,10 @@ type Config struct {
 
 func main() {
 	flag.Parse()
-	if *infile != "" {
+	if *infile != "" || len(flag.Args()) > 0 {
+		if len(flag.Args()) > 0 {
+			*infile = flag.Arg(0)
+		}
 		rdFile, err := os.Open(*infile)
 		if err != nil {
 			log.Fatal(err)
