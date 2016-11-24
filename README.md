@@ -8,9 +8,10 @@ Please file any issues with a minimal working example.
 
 To get:
 
-    go get -u github.com/nickng/bibtex
+    go get -u github.com/nickng/bibtex/...
 
-To run a test parser:
+This will also install `prettybib`, a bibtex pretty printer.
+To parse and pretty print a bibtex file, for example:
 
     cd $GOPATH/src/github.com/nickng/bibtex
-    go run parser/main.go < example/simple.bib
+    prettybib -in example/simple.bib
