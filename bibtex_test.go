@@ -1,7 +1,9 @@
 package bibtex
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"testing"
 )
 
@@ -54,5 +56,30 @@ func TestString(t *testing.T) {
 	if bibtex.String() != expected {
 		fmt.Printf("%s\n%s\n", bibtex.String(), expected)
 		t.Error("Output does not match.")
+	}
+}
+
+// Test that the parser accepts all valid bibtex files in the example/ dir.
+func TestParser(t *testing.T) {
+	examples := []string{
+		"example/biblatex-examples.bib",
+		"example/embeddedtex.bib",
+		"example/quoted.bib",
+		"example/simple.bib",
+		"example/space.bib",
+		"example/symbols.bib",
+		"example/var.bib",
+	}
+
+	for _, ex := range examples {
+		t.Logf("Parsing example: %s", ex)
+		b, err := ioutil.ReadFile(ex)
+		if err != nil {
+			t.Errorf("Cannot read %s: %v", ex, err)
+		}
+		_, err = Parse(bytes.NewReader(b))
+		if err != nil {
+			t.Errorf("Cannot parse valid bibtex file %s: %v", ex, err)
+		}
 	}
 }
