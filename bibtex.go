@@ -170,7 +170,7 @@ func (bib *BibTex) String() string {
 	return bibtex.String()
 }
 
-// RawString returns a BibTex datastructure in its internal represenation.
+// RawString returns a BibTex data structure in its internal representation.
 func (bib *BibTex) RawString() string {
 	var bibtex bytes.Buffer
 	for k, strvar := range bib.StringVar {
