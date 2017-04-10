@@ -10,10 +10,11 @@ type bibTag struct {
 	val BibString
 }
 
-var bibs = NewBibTex()
+var bib *BibTex // Only for holding current bib
 %}
 
 %union {
+	bibtex   *BibTex
 	strval   string
 	bibentry *BibEntry
 	bibtag   *bibTag
@@ -24,21 +25,22 @@ var bibs = NewBibTex()
 %token COMMENT STRING PREAMBLE
 %token ATSIGN COLON EQUAL COMMA POUND LBRACE RBRACE DQUOTE LPAREN RPAREN
 %token <strval> BAREIDENT IDENT
+%type <bibtex> bibtex
 %type <bibentry> bibentry
-%type <bibtag> tag
+%type <bibtag> tag stringentry
 %type <bibtags> tags
-%type <strings> longstring
+%type <strings> longstring preambleentry
 
 %%
 
 top : bibtex { }
     ;
 
-bibtex : /* empty */          { }
-       | bibtex bibentry      { bibs.AddEntry($2) }
-       | bibtex commententry  { }
-       | bibtex stringentry   { }
-       | bibtex preambleentry { }
+bibtex : /* empty */          { $$ = NewBibTex(); bib = $$ }
+       | bibtex bibentry      { $$ = $1; $$.AddEntry($2) }
+       | bibtex commententry  { $$ = $1 }
+       | bibtex stringentry   { $$ = $1; $$.AddStringVar($2.key, $2.val) }
+       | bibtex preambleentry { $$ = $1; $$.AddPreamble($2) }
        ;
 
 bibentry : ATSIGN BAREIDENT LBRACE BAREIDENT COMMA tags RBRACE { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
@@ -49,18 +51,18 @@ commententry : ATSIGN COMMENT LBRACE longstring RBRACE {}
              | ATSIGN COMMENT LPAREN longstring RBRACE {}
              ;
 
-stringentry : ATSIGN STRING LBRACE BAREIDENT EQUAL longstring RBRACE { bibs.AddStringVar($4, $6) }
-            | ATSIGN STRING LPAREN BAREIDENT EQUAL longstring RBRACE { bibs.AddStringVar($4, $6) }
+stringentry : ATSIGN STRING LBRACE BAREIDENT EQUAL longstring RBRACE { $$ = &bibTag{key: $4, val: $6 } }
+            | ATSIGN STRING LPAREN BAREIDENT EQUAL longstring RBRACE { $$ = &bibTag{key: $4, val: $6 } }
             ;
 
-preambleentry : ATSIGN PREAMBLE LBRACE longstring RBRACE { bibs.AddPreamble($4) }
-              | ATSIGN PREAMBLE LPAREN longstring RPAREN { bibs.AddPreamble($4) }
+preambleentry : ATSIGN PREAMBLE LBRACE longstring RBRACE { $$ = $4 }
+              | ATSIGN PREAMBLE LPAREN longstring RPAREN { $$ = $4 }
               ;
 
 longstring :                  IDENT     { $$ = NewBibConst($1) }
-           |                  BAREIDENT { $$ = bibs.GetStringVar($1) }
+           |                  BAREIDENT { $$ = bib.GetStringVar($1) }
            | longstring POUND IDENT     { $$ = NewBibComposite($1); $$.(*BibComposite).Append(NewBibConst($3))}
-           | longstring POUND BAREIDENT { $$ = NewBibComposite($1); $$.(*BibComposite).Append(bibs.GetStringVar($3)) }
+           | longstring POUND BAREIDENT { $$ = NewBibComposite($1); $$.(*BibComposite).Append(bib.GetStringVar($3)) }
            ;
 
 tag : /* empty */                { }
@@ -81,6 +83,6 @@ func Parse(r io.Reader) (*BibTex, error) {
 	case err := <-l.Errors:
 		return nil, err
 	default:
-		return bibs, nil
+		return bib, nil
 	}
 }

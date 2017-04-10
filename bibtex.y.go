@@ -13,11 +13,12 @@ type bibTag struct {
 	val BibString
 }
 
-var bibs = NewBibTex()
+var bib *BibTex // Only for holding current bib
 
 //line bibtex.y:16
 type bibtexSymType struct {
 	yys      int
+	bibtex   *BibTex
 	strval   string
 	bibentry *BibEntry
 	bibtag   *bibTag
@@ -67,7 +68,7 @@ const bibtexEofCode = 1
 const bibtexErrCode = 2
 const bibtexInitialStackSize = 16
 
-//line bibtex.y:74
+//line bibtex.y:76
 
 // Parse is the entry point to the bibtex parser.
 func Parse(r io.Reader) (*BibTex, error) {
@@ -77,7 +78,7 @@ func Parse(r io.Reader) (*BibTex, error) {
 	case err := <-l.Errors:
 		return nil, err
 	default:
-		return bibs, nil
+		return bib, nil
 	}
 }
 
@@ -88,11 +89,7 @@ var bibtexExca = [...]int{
 	-2, 0,
 }
 
-const bibtexNprod = 23
 const bibtexPrivate = 57344
-
-var bibtexTokenNames []string
-var bibtexStates []string
 
 const bibtexLast = 61
 
@@ -103,8 +100,8 @@ var bibtexAct = [...]int{
 	29, 33, 33, 49, 18, 16, 38, 19, 17, 14,
 	31, 12, 15, 42, 13, 30, 45, 46, 33, 33,
 	52, 51, 48, 36, 33, 47, 37, 33, 35, 34,
-	54, 53, 33, 7, 32, 6, 5, 4, 2, 1,
-	3,
+	54, 53, 33, 7, 32, 4, 1, 6, 5, 3,
+	2,
 }
 var bibtexPact = [...]int{
 
@@ -117,13 +114,13 @@ var bibtexPact = [...]int{
 }
 var bibtexPgo = [...]int{
 
-	0, 60, 2, 1, 0, 59, 58, 57, 56, 55,
+	0, 60, 59, 2, 58, 1, 0, 57, 56, 55,
 }
 var bibtexR1 = [...]int{
 
-	0, 5, 6, 6, 6, 6, 6, 1, 1, 7,
-	7, 8, 8, 9, 9, 4, 4, 4, 4, 2,
-	2, 3, 3,
+	0, 8, 1, 1, 1, 1, 1, 2, 2, 9,
+	9, 4, 4, 7, 7, 6, 6, 6, 6, 3,
+	3, 5, 5,
 }
 var bibtexR2 = [...]int{
 
@@ -133,12 +130,12 @@ var bibtexR2 = [...]int{
 }
 var bibtexChk = [...]int{
 
-	-1000, -5, -6, -1, -7, -8, -9, 7, 17, 4,
+	-1000, -8, -1, -2, -9, -4, -7, 7, 17, 4,
 	5, 6, 12, 15, 12, 15, 12, 15, 12, 15,
-	17, 17, -4, 18, 17, -4, 17, 17, -4, -4,
-	10, 10, 13, 11, 13, 9, 9, 13, 16, -3,
-	-2, 17, -3, 18, 17, -4, -4, 13, 10, 9,
-	16, 13, 13, -2, -4,
+	17, 17, -6, 18, 17, -6, 17, 17, -6, -6,
+	10, 10, 13, 11, 13, 9, 9, 13, 16, -5,
+	-3, 17, -5, 18, 17, -6, -6, 13, 10, 9,
+	16, 13, 13, -3, -6,
 }
 var bibtexDef = [...]int{
 
@@ -501,38 +498,46 @@ bibtexdefault:
 
 	case 1:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
-		//line bibtex.y:34
+		//line bibtex.y:36
 		{
 		}
 	case 2:
 		bibtexDollar = bibtexS[bibtexpt-0 : bibtexpt+1]
-		//line bibtex.y:37
+		//line bibtex.y:39
 		{
+			bibtexVAL.bibtex = NewBibTex()
+			bib = bibtexVAL.bibtex
 		}
 	case 3:
 		bibtexDollar = bibtexS[bibtexpt-2 : bibtexpt+1]
-		//line bibtex.y:38
+		//line bibtex.y:40
 		{
-			bibs.AddEntry(bibtexDollar[2].bibentry)
+			bibtexVAL.bibtex = bibtexDollar[1].bibtex
+			bibtexVAL.bibtex.AddEntry(bibtexDollar[2].bibentry)
 		}
 	case 4:
 		bibtexDollar = bibtexS[bibtexpt-2 : bibtexpt+1]
-		//line bibtex.y:39
+		//line bibtex.y:41
 		{
+			bibtexVAL.bibtex = bibtexDollar[1].bibtex
 		}
 	case 5:
 		bibtexDollar = bibtexS[bibtexpt-2 : bibtexpt+1]
-		//line bibtex.y:40
+		//line bibtex.y:42
 		{
+			bibtexVAL.bibtex = bibtexDollar[1].bibtex
+			bibtexVAL.bibtex.AddStringVar(bibtexDollar[2].bibtag.key, bibtexDollar[2].bibtag.val)
 		}
 	case 6:
 		bibtexDollar = bibtexS[bibtexpt-2 : bibtexpt+1]
-		//line bibtex.y:41
+		//line bibtex.y:43
 		{
+			bibtexVAL.bibtex = bibtexDollar[1].bibtex
+			bibtexVAL.bibtex.AddPreamble(bibtexDollar[2].strings)
 		}
 	case 7:
 		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
-		//line bibtex.y:44
+		//line bibtex.y:46
 		{
 			bibtexVAL.bibentry = NewBibEntry(bibtexDollar[2].strval, bibtexDollar[4].strval)
 			for _, t := range bibtexDollar[6].bibtags {
@@ -541,7 +546,7 @@ bibtexdefault:
 		}
 	case 8:
 		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
-		//line bibtex.y:45
+		//line bibtex.y:47
 		{
 			bibtexVAL.bibentry = NewBibEntry(bibtexDollar[2].strval, bibtexDollar[4].strval)
 			for _, t := range bibtexDollar[6].bibtags {
@@ -550,84 +555,84 @@ bibtexdefault:
 		}
 	case 9:
 		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-		//line bibtex.y:48
+		//line bibtex.y:50
 		{
 		}
 	case 10:
 		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-		//line bibtex.y:49
+		//line bibtex.y:51
 		{
 		}
 	case 11:
 		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
-		//line bibtex.y:52
+		//line bibtex.y:54
 		{
-			bibs.AddStringVar(bibtexDollar[4].strval, bibtexDollar[6].strings)
+			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[4].strval, val: bibtexDollar[6].strings}
 		}
 	case 12:
 		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
-		//line bibtex.y:53
+		//line bibtex.y:55
 		{
-			bibs.AddStringVar(bibtexDollar[4].strval, bibtexDollar[6].strings)
+			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[4].strval, val: bibtexDollar[6].strings}
 		}
 	case 13:
 		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-		//line bibtex.y:56
+		//line bibtex.y:58
 		{
-			bibs.AddPreamble(bibtexDollar[4].strings)
+			bibtexVAL.strings = bibtexDollar[4].strings
 		}
 	case 14:
 		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-		//line bibtex.y:57
+		//line bibtex.y:59
 		{
-			bibs.AddPreamble(bibtexDollar[4].strings)
+			bibtexVAL.strings = bibtexDollar[4].strings
 		}
 	case 15:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
-		//line bibtex.y:60
+		//line bibtex.y:62
 		{
 			bibtexVAL.strings = NewBibConst(bibtexDollar[1].strval)
 		}
 	case 16:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
-		//line bibtex.y:61
+		//line bibtex.y:63
 		{
-			bibtexVAL.strings = bibs.GetStringVar(bibtexDollar[1].strval)
+			bibtexVAL.strings = bib.GetStringVar(bibtexDollar[1].strval)
 		}
 	case 17:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-		//line bibtex.y:62
+		//line bibtex.y:64
 		{
 			bibtexVAL.strings = NewBibComposite(bibtexDollar[1].strings)
 			bibtexVAL.strings.(*BibComposite).Append(NewBibConst(bibtexDollar[3].strval))
 		}
 	case 18:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-		//line bibtex.y:63
+		//line bibtex.y:65
 		{
 			bibtexVAL.strings = NewBibComposite(bibtexDollar[1].strings)
-			bibtexVAL.strings.(*BibComposite).Append(bibs.GetStringVar(bibtexDollar[3].strval))
+			bibtexVAL.strings.(*BibComposite).Append(bib.GetStringVar(bibtexDollar[3].strval))
 		}
 	case 19:
 		bibtexDollar = bibtexS[bibtexpt-0 : bibtexpt+1]
-		//line bibtex.y:66
+		//line bibtex.y:68
 		{
 		}
 	case 20:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-		//line bibtex.y:67
+		//line bibtex.y:69
 		{
 			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[1].strval, val: bibtexDollar[3].strings}
 		}
 	case 21:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
-		//line bibtex.y:70
+		//line bibtex.y:72
 		{
 			bibtexVAL.bibtags = []*bibTag{bibtexDollar[1].bibtag}
 		}
 	case 22:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-		//line bibtex.y:71
+		//line bibtex.y:73
 		{
 			if bibtexDollar[3].bibtag == nil {
 				bibtexVAL.bibtags = bibtexDollar[1].bibtags

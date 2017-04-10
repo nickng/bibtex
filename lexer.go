@@ -1,4 +1,4 @@
-//go:generate go tool yacc -p bibtex -o bibtex.y.go bibtex.y
+//go:generate goyacc -p bibtex -o bibtex.y.go bibtex.y
 
 package bibtex
 

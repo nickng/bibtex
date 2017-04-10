@@ -84,3 +84,35 @@ func TestParser(t *testing.T) {
 		}
 	}
 }
+
+// Tests that multiple parse returns different instances of the parsed BibTex.
+// Otherwise the number of entries will pile up. (Issue #4)
+func TestMultiParse(t *testing.T) {
+	examples := []string{
+		"example/simple.bib",
+		"example/simple.bib",
+		"example/simple.bib",
+	}
+
+	var bibs []*BibTex
+	for _, ex := range examples {
+		t.Logf("Parsing example: %s", ex)
+		b, err := ioutil.ReadFile(ex)
+		if err != nil {
+			t.Errorf("Cannot read %s: %v", ex, err)
+		}
+		s, err := Parse(bytes.NewReader(b))
+		if err != nil {
+			t.Errorf("Cannot parse valid bibtex file %s: %v", ex, err)
+		}
+		if want, got := 2, len(s.Entries); want != got {
+			t.Errorf("Expecting %d entries but got %d", want, got)
+		}
+		bibs = append(bibs, s)
+	}
+	for _, bib := range bibs {
+		if want, got := 2, len(bib.Entries); want != got {
+			t.Errorf("Expecting %d entries but got %d", want, got)
+		}
+	}
+}
