@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
+	"text/tabwriter"
 )
 
 // BibString is a segment of a bib string.
@@ -194,27 +196,55 @@ func (bib *BibTex) RawString() string {
 	return bibtex.String()
 }
 
-// PrettyString pretty prints a bibtex.
+// PrettyString pretty prints a BibTex.
 func (bib *BibTex) PrettyString() string {
-	var bibtex bytes.Buffer
-	for _, entry := range bib.Entries {
-		bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
-		keylen := 0
+	var buf bytes.Buffer
+	for i, entry := range bib.Entries {
+		if i != 0 {
+			fmt.Fprint(&buf, "\n")
+		}
+		fmt.Fprintf(&buf, "@%s{%s,\n", entry.Type, entry.CiteName)
+
+		// Determine key order.
+		keys := []string{}
 		for key := range entry.Fields {
-			if len(key) > keylen {
-				keylen = len(key)
-			}
+			keys = append(keys, key)
 		}
-		for key, val := range entry.Fields {
-			if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
-				bibtex.WriteString(fmt.Sprintf("  %s%s = %d,\n", key, strings.Repeat(" ", keylen-len(key)), i))
-			} else if strings.ContainsAny(val.String(), "\"{}") { // Certain characters should be {} quoted.
-				bibtex.WriteString(fmt.Sprintf("  %s%s = {%s},\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
-			} else {
-				bibtex.WriteString(fmt.Sprintf("  %s%s = \"%s\",\n", key, strings.Repeat(" ", keylen-len(key)), val.String()))
-			}
+
+		priority := map[string]int{"title": -3, "author": -2, "url": -1}
+		sort.Slice(keys, func(i, j int) bool {
+			pi, pj := priority[keys[i]], priority[keys[j]]
+			return pi < pj || (pi == pj && keys[i] < keys[j])
+		})
+
+		// Write fields.
+		tw := tabwriter.NewWriter(&buf, 1, 4, 1, ' ', 0)
+		for _, key := range keys {
+			value := entry.Fields[key].String()
+			format := stringformat(value)
+			fmt.Fprintf(tw, "    %s\t=\t"+format+",\n", key, value)
 		}
-		bibtex.WriteString("}\n")
+		tw.Flush()
+
+		// Close.
+		buf.WriteString("}\n")
 	}
-	return bibtex.String()
+	return buf.String()
+
+}
+
+// stringformat determines the correct formatting verb for the given BibTeX field value.
+func stringformat(v string) string {
+	// Numbers may be represented unquoted.
+	if _, err := strconv.Atoi(v); err == nil {
+		return "%s"
+	}
+
+	// Strings with certain characters must be brace quoted.
+	if strings.ContainsAny(v, "\"{}") {
+		return "{%s}"
+	}
+
+	// Default to quoted string.
+	return "%q"
 }
