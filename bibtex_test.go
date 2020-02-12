@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -61,15 +63,9 @@ func TestString(t *testing.T) {
 
 // Test that the parser accepts all valid bibtex files in the example/ dir.
 func TestParser(t *testing.T) {
-	examples := []string{
-		"example/biblatex-examples.bib",
-		"example/embeddedtex.bib",
-		"example/field-error.bib",
-		"example/quoted.bib",
-		"example/simple.bib",
-		"example/space.bib",
-		"example/symbols.bib",
-		"example/var.bib",
+	examples, err := filepath.Glob("example/*.bib")
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for _, ex := range examples {
@@ -113,6 +109,67 @@ func TestMultiParse(t *testing.T) {
 	for _, bib := range bibs {
 		if want, got := 2, len(bib.Entries); want != got {
 			t.Errorf("Expecting %d entries but got %d", want, got)
+		}
+	}
+}
+
+func TestPrettyStringRoundTrip(t *testing.T) {
+	examples, err := filepath.Glob("example/*.bib")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, ex := range examples {
+		// Read input.
+		b, err := ioutil.ReadFile(ex)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Parse into BibTeX.
+		bib, err = Parse(bytes.NewReader(b))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Pretty print it and parse it again.
+		s := bib.PrettyString()
+
+		bib2, err := Parse(strings.NewReader(s))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		// Check equality.
+		AssertEntryListsEqual(t, bib.Entries, bib2.Entries)
+	}
+}
+
+func AssertEntryListsEqual(t *testing.T, a, b []*BibEntry) {
+	t.Helper()
+
+	if len(a) != len(b) {
+		t.Fatalf("length mismatch")
+	}
+
+	for i := range a {
+		AssertEntriesEqual(t, a[i], b[i])
+	}
+}
+
+func AssertEntriesEqual(t *testing.T, a, b *BibEntry) {
+	if a.Type != b.Type {
+		t.Error("type mismatch")
+	}
+	if a.CiteName != b.CiteName {
+		t.Error("cite name mismatch")
+	}
+	if len(a.Fields) != len(b.Fields) {
+		t.Fatal("different number of fields")
+	}
+	for key := range a.Fields {
+		if a.Fields[key].String() != b.Fields[key].String() {
+			t.Fatalf("mismatch on field %q", key)
 		}
 	}
 }
