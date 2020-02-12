@@ -14,12 +14,12 @@ var parseField bool
 // Scanner is a lexical scanner
 type Scanner struct {
 	r   *bufio.Reader
-	pos TokenPos
+	pos tokenPos
 }
 
 // NewScanner returns a new instance of Scanner.
 func NewScanner(r io.Reader) *Scanner {
-	return &Scanner{r: bufio.NewReader(r), pos: TokenPos{Char: 0, Lines: []int{}}}
+	return &Scanner{r: bufio.NewReader(r), pos: tokenPos{Char: 0, Lines: []int{}}}
 }
 
 // read reads the next rune from the buffered reader.
@@ -50,7 +50,7 @@ func (s *Scanner) unread() {
 }
 
 // Scan returns the next token and literal value.
-func (s *Scanner) Scan() (tok Token, lit string) {
+func (s *Scanner) Scan() (tok token, lit string) {
 	ch := s.read()
 	if isWhitespace(ch) {
 		s.ignoreWhitespace()
@@ -64,37 +64,37 @@ func (s *Scanner) Scan() (tok Token, lit string) {
 	case eof:
 		return 0, ""
 	case '@':
-		return ATSIGN, string(ch)
+		return tATSIGN, string(ch)
 	case ':':
-		return COLON, string(ch)
+		return tCOLON, string(ch)
 	case ',':
 		parseField = false // reset parseField if reached end of field.
-		return COMMA, string(ch)
+		return tCOMMA, string(ch)
 	case '=':
 		parseField = true // set parseField if = sign outside quoted or ident.
-		return EQUAL, string(ch)
+		return tEQUAL, string(ch)
 	case '"':
 		return s.scanQuoted()
 	case '{':
 		if parseField {
 			return s.scanBraced()
 		}
-		return LBRACE, string(ch)
+		return tLBRACE, string(ch)
 	case '}':
 		if parseField { // reset parseField if reached end of entry.
 			parseField = false
 		}
-		return RBRACE, string(ch)
+		return tRBRACE, string(ch)
 	case '#':
-		return POUND, string(ch)
+		return tPOUND, string(ch)
 	case ' ':
 		s.ignoreWhitespace()
 	}
-	return ILLEGAL, string(ch)
+	return tILLEGAL, string(ch)
 }
 
 // scanIdent categorises a string to one of three categories.
-func (s *Scanner) scanIdent() (tok Token, lit string) {
+func (s *Scanner) scanIdent() (tok token, lit string) {
 	switch ch := s.read(); ch {
 	case '"':
 		return s.scanQuoted()
@@ -106,7 +106,7 @@ func (s *Scanner) scanIdent() (tok Token, lit string) {
 	}
 }
 
-func (s *Scanner) scanBare() (Token, string) {
+func (s *Scanner) scanBare() (token, string) {
 	var buf bytes.Buffer
 	for {
 		if ch := s.read(); ch == eof {
@@ -120,19 +120,19 @@ func (s *Scanner) scanBare() (Token, string) {
 	}
 	str := buf.String()
 	if strings.ToLower(str) == "comment" {
-		return COMMENT, str
+		return tCOMMENT, str
 	} else if strings.ToLower(str) == "preamble" {
-		return PREAMBLE, str
+		return tPREAMBLE, str
 	} else if strings.ToLower(str) == "string" {
-		return STRING, str
+		return tSTRING, str
 	} else if _, err := strconv.Atoi(str); err == nil && parseField { // Special case for numeric
-		return IDENT, str
+		return tIDENT, str
 	}
-	return BAREIDENT, str
+	return tBAREIDENT, str
 }
 
 // scanBraced parses a braced string, like {this}.
-func (s *Scanner) scanBraced() (Token, string) {
+func (s *Scanner) scanBraced() (token, string) {
 	var buf bytes.Buffer
 	var macro bool
 	brace := 1
@@ -149,7 +149,7 @@ func (s *Scanner) scanBraced() (Token, string) {
 			brace--
 			macro = false
 			if brace == 0 { // Balances open brace.
-				return IDENT, buf.String()
+				return tIDENT, buf.String()
 			}
 			_, _ = buf.WriteRune(ch)
 		} else if ch == '@' {
@@ -165,11 +165,11 @@ func (s *Scanner) scanBraced() (Token, string) {
 			_, _ = buf.WriteRune(ch)
 		}
 	}
-	return ILLEGAL, buf.String()
+	return tILLEGAL, buf.String()
 }
 
 // scanQuoted parses a quoted string, like "this".
-func (s *Scanner) scanQuoted() (Token, string) {
+func (s *Scanner) scanQuoted() (token, string) {
 	var buf bytes.Buffer
 	brace := 0
 	for {
@@ -181,14 +181,14 @@ func (s *Scanner) scanQuoted() (Token, string) {
 			brace--
 		} else if ch == '"' {
 			if brace == 0 { // Matches open quote, unescaped
-				return IDENT, buf.String()
+				return tIDENT, buf.String()
 			}
 			_, _ = buf.WriteRune(ch)
 		} else {
 			_, _ = buf.WriteRune(ch)
 		}
 	}
-	return ILLEGAL, buf.String()
+	return tILLEGAL, buf.String()
 }
 
 // ignoreWhitespace consumes the current rune and all contiguous whitespace.

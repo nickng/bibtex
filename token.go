@@ -6,22 +6,22 @@ import (
 )
 
 // Lexer token.
-type Token int
+type token int
 
 const (
-	// ILLEGAL stands for an invalid token.
-	ILLEGAL Token = iota
+	// tILLEGAL stands for an invalid token.
+	tILLEGAL token = iota
 )
 
 var eof = rune(0)
 
-// TokenPos is a pair of coordinate to identify start of token.
-type TokenPos struct {
+// tokenPos is a pair of coordinate to identify start of token.
+type tokenPos struct {
 	Char  int
 	Lines []int
 }
 
-func (p TokenPos) String() string {
+func (p tokenPos) String() string {
 	return fmt.Sprintf("%d:%d", len(p.Lines)+1, p.Char)
 }
 

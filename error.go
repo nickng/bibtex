@@ -14,7 +14,7 @@ var (
 
 // ErrParse is a parse error.
 type ErrParse struct {
-	Pos TokenPos
+	Pos tokenPos
 	Err string // Error string returned from parser.
 }
 

@@ -22,9 +22,9 @@ var bib *BibTex // Only for holding current bib
 	strings  BibString
 }
 
-%token COMMENT STRING PREAMBLE
-%token ATSIGN COLON EQUAL COMMA POUND LBRACE RBRACE DQUOTE LPAREN RPAREN
-%token <strval> BAREIDENT IDENT
+%token tCOMMENT tSTRING tPREAMBLE
+%token tATSIGN tCOLON tEQUAL tCOMMA tPOUND tLBRACE tRBRACE tDQUOTE tLPAREN tRPAREN
+%token <strval> tBAREIDENT tIDENT
 %type <bibtex> bibtex
 %type <bibentry> bibentry
 %type <bibtag> tag stringentry
@@ -43,34 +43,34 @@ bibtex : /* empty */          { $$ = NewBibTex(); bib = $$ }
        | bibtex preambleentry { $$ = $1; $$.AddPreamble($2) }
        ;
 
-bibentry : ATSIGN BAREIDENT LBRACE BAREIDENT COMMA tags RBRACE { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
-         | ATSIGN BAREIDENT LPAREN BAREIDENT COMMA tags RPAREN { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
+bibentry : tATSIGN tBAREIDENT tLBRACE tBAREIDENT tCOMMA tags tRBRACE { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
+         | tATSIGN tBAREIDENT tLPAREN tBAREIDENT tCOMMA tags tRPAREN { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
          ;
 
-commententry : ATSIGN COMMENT LBRACE longstring RBRACE {}
-             | ATSIGN COMMENT LPAREN longstring RBRACE {}
+commententry : tATSIGN tCOMMENT tLBRACE longstring tRBRACE {}
+             | tATSIGN tCOMMENT tLPAREN longstring tRBRACE {}
              ;
 
-stringentry : ATSIGN STRING LBRACE BAREIDENT EQUAL longstring RBRACE { $$ = &bibTag{key: $4, val: $6 } }
-            | ATSIGN STRING LPAREN BAREIDENT EQUAL longstring RBRACE { $$ = &bibTag{key: $4, val: $6 } }
+stringentry : tATSIGN tSTRING tLBRACE tBAREIDENT tEQUAL longstring tRBRACE { $$ = &bibTag{key: $4, val: $6 } }
+            | tATSIGN tSTRING tLPAREN tBAREIDENT tEQUAL longstring tRBRACE { $$ = &bibTag{key: $4, val: $6 } }
             ;
 
-preambleentry : ATSIGN PREAMBLE LBRACE longstring RBRACE { $$ = $4 }
-              | ATSIGN PREAMBLE LPAREN longstring RPAREN { $$ = $4 }
+preambleentry : tATSIGN tPREAMBLE tLBRACE longstring tRBRACE { $$ = $4 }
+              | tATSIGN tPREAMBLE tLPAREN longstring tRPAREN { $$ = $4 }
               ;
 
-longstring :                  IDENT     { $$ = NewBibConst($1) }
-           |                  BAREIDENT { $$ = bib.GetStringVar($1) }
-           | longstring POUND IDENT     { $$ = NewBibComposite($1); $$.(*BibComposite).Append(NewBibConst($3))}
-           | longstring POUND BAREIDENT { $$ = NewBibComposite($1); $$.(*BibComposite).Append(bib.GetStringVar($3)) }
+longstring :                  tIDENT     { $$ = NewBibConst($1) }
+           |                  tBAREIDENT { $$ = bib.GetStringVar($1) }
+           | longstring tPOUND tIDENT     { $$ = NewBibComposite($1); $$.(*BibComposite).Append(NewBibConst($3))}
+           | longstring tPOUND tBAREIDENT { $$ = NewBibComposite($1); $$.(*BibComposite).Append(bib.GetStringVar($3)) }
            ;
 
 tag : /* empty */                { }
-    | BAREIDENT EQUAL longstring { $$ = &bibTag{key: $1, val: $3} }
+    | tBAREIDENT tEQUAL longstring { $$ = &bibTag{key: $1, val: $3} }
     ;
 
 tags : tag            { $$ = []*bibTag{$1} }
-     | tags COMMA tag { if $3 == nil { $$ = $1 } else { $$ = append($1, $3) } }
+     | tags tCOMMA tag { if $3 == nil { $$ = $1 } else { $$ = append($1, $3) } }
      ;
 
 %%
