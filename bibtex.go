@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 // BibString is a segment of a bib string.
@@ -151,14 +152,34 @@ type BibTex struct {
 	Preambles []BibString        // List of Preambles
 	Entries   []*BibEntry        // Items in a bibliography.
 	StringVar map[string]*BibVar // Map from string variable to string.
+
+	// A list of default BibVars that are implicitly
+	// defined and can be used without defining
+	defaultVars map[string]string
 }
 
 // NewBibTex creates a new BibTex data structure.
 func NewBibTex() *BibTex {
+	// Sets up some default vars
+	months := map[string]time.Month{
+		"jan": 1, "feb": 2, "mar": 3,
+		"apr": 4, "may": 5, "jun": 6,
+		"jul": 7, "aug": 8, "sep": 9,
+		"oct": 10, "nov": 11, "dec": 12,
+	}
+
+	defaultVars := make(map[string]string)
+	for mth, month := range months {
+		// TODO(nickng): i10n of month name in user's local language
+		defaultVars[mth] = month.String()
+	}
+
 	return &BibTex{
 		Preambles: []BibString{},
 		Entries:   []*BibEntry{},
 		StringVar: make(map[string]*BibVar),
+
+		defaultVars: defaultVars,
 	}
 }
 
@@ -182,8 +203,24 @@ func (bib *BibTex) GetStringVar(key string) *BibVar {
 	if bv, ok := bib.StringVar[key]; ok {
 		return bv
 	}
+	if v, ok := bib.getDefaultVar(key); ok {
+		return v
+	}
+	// This is undefined.
 	log.Fatalf("%s: %s", ErrUnknownStringVar, key)
 	return nil
+}
+
+// getDefaultVar is a fallback for looking up keys (e.g. 3-character month)
+// and use them even though it hasn't been defined in the bib.
+func (bib *BibTex) getDefaultVar(key string) (*BibVar, bool) {
+	if v, ok := bib.defaultVars[key]; ok {
+		// if found, add this to the BibTex
+		bib.StringVar[key] = &BibVar{Key: key, Value: NewBibConst(v)}
+		return bib.StringVar[key], true
+	}
+
+	return nil, false
 }
 
 // String returns a BibTex data structure as a simplified BibTex string.
