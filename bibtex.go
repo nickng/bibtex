@@ -114,6 +114,38 @@ func (entry *BibEntry) AddField(name string, value BibString) {
 	entry.Fields[strings.TrimSpace(name)] = value
 }
 
+// String returns a BibTex entry as a simplified BibTex string.
+func (entry *BibEntry) String() string {
+	var bibtex bytes.Buffer
+	bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
+	for key, val := range entry.Fields {
+		if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
+			bibtex.WriteString(fmt.Sprintf("  %s = %d,\n", key, i))
+		} else {
+			bibtex.WriteString(fmt.Sprintf("  %s = {%s},\n", key, strings.TrimSpace(val.String())))
+		}
+	}
+	bibtex.Truncate(bibtex.Len() - 2)
+	bibtex.WriteString(fmt.Sprintf("\n}\n"))
+	return bibtex.String()
+}
+
+// RawString returns a BibTex entry data structure in its internal representation.
+func (entry *BibEntry) RawString() string {
+	var bibtex bytes.Buffer
+	bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
+	for key, val := range entry.Fields {
+		if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
+			bibtex.WriteString(fmt.Sprintf("  %s = %d,\n", key, i))
+		} else {
+			bibtex.WriteString(fmt.Sprintf("  %s = %s,\n", key, val.RawString()))
+		}
+	}
+	bibtex.Truncate(bibtex.Len() - 2)
+	bibtex.WriteString(fmt.Sprintf("\n}\n"))
+	return bibtex.String()
+}
+
 // BibTex is a list of BibTeX entries.
 type BibTex struct {
 	Preambles []BibString        // List of Preambles
@@ -158,16 +190,7 @@ func (bib *BibTex) GetStringVar(key string) *BibVar {
 func (bib *BibTex) String() string {
 	var bibtex bytes.Buffer
 	for _, entry := range bib.Entries {
-		bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
-		for key, val := range entry.Fields {
-			if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
-				bibtex.WriteString(fmt.Sprintf("  %s = %d,\n", key, i))
-			} else {
-				bibtex.WriteString(fmt.Sprintf("  %s = {%s},\n", key, strings.TrimSpace(val.String())))
-			}
-		}
-		bibtex.Truncate(bibtex.Len() - 2)
-		bibtex.WriteString(fmt.Sprintf("\n}\n"))
+		bibtex.WriteString(entry.String())
 	}
 	return bibtex.String()
 }
@@ -182,16 +205,7 @@ func (bib *BibTex) RawString() string {
 		bibtex.WriteString(fmt.Sprintf("@preamble{%s}\n", preamble.RawString()))
 	}
 	for _, entry := range bib.Entries {
-		bibtex.WriteString(fmt.Sprintf("@%s{%s,\n", entry.Type, entry.CiteName))
-		for key, val := range entry.Fields {
-			if i, err := strconv.Atoi(strings.TrimSpace(val.String())); err == nil {
-				bibtex.WriteString(fmt.Sprintf("  %s = %d,\n", key, i))
-			} else {
-				bibtex.WriteString(fmt.Sprintf("  %s = %s,\n", key, val.RawString()))
-			}
-		}
-		bibtex.Truncate(bibtex.Len() - 2)
-		bibtex.WriteString(fmt.Sprintf("\n}\n"))
+		bibtex.WriteString(entry.RawString())
 	}
 	return bibtex.String()
 }
