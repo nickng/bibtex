@@ -173,3 +173,19 @@ func AssertEntriesEqual(t *testing.T, a, b *BibEntry) {
 		}
 	}
 }
+
+func BenchmarkStringPerformance(b *testing.B) {
+	exampleFileBytes, err := ioutil.ReadFile("example/biblatex-examples.bib")
+	if err != nil {
+		b.Fatal(err)
+	}
+	bib, err := Parse(bytes.NewReader(exampleFileBytes))
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = bib.String()
+	}
+}
