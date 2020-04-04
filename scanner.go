@@ -11,20 +11,20 @@ import (
 
 var parseField bool
 
-// Scanner is a lexical scanner
-type Scanner struct {
+// scanner is a lexical scanner
+type scanner struct {
 	r   *bufio.Reader
 	pos tokenPos
 }
 
-// NewScanner returns a new instance of Scanner.
-func NewScanner(r io.Reader) *Scanner {
-	return &Scanner{r: bufio.NewReader(r), pos: tokenPos{Char: 0, Lines: []int{}}}
+// newScanner returns a new instance of scanner.
+func newScanner(r io.Reader) *scanner {
+	return &scanner{r: bufio.NewReader(r), pos: tokenPos{Char: 0, Lines: []int{}}}
 }
 
 // read reads the next rune from the buffered reader.
 // Returns the rune(0) if an error occurs (or io.eof is returned).
-func (s *Scanner) read() rune {
+func (s *scanner) read() rune {
 	ch, _, err := s.r.ReadRune()
 	if err != nil {
 		return eof
@@ -39,7 +39,7 @@ func (s *Scanner) read() rune {
 }
 
 // unread places the previously read rune back on the reader.
-func (s *Scanner) unread() {
+func (s *scanner) unread() {
 	_ = s.r.UnreadRune()
 	if s.pos.Char == 0 {
 		s.pos.Char = s.pos.Lines[len(s.pos.Lines)-1]
@@ -50,7 +50,7 @@ func (s *Scanner) unread() {
 }
 
 // Scan returns the next token and literal value.
-func (s *Scanner) Scan() (tok token, lit string) {
+func (s *scanner) Scan() (tok token, lit string) {
 	ch := s.read()
 	if isWhitespace(ch) {
 		s.ignoreWhitespace()
@@ -94,7 +94,7 @@ func (s *Scanner) Scan() (tok token, lit string) {
 }
 
 // scanIdent categorises a string to one of three categories.
-func (s *Scanner) scanIdent() (tok token, lit string) {
+func (s *scanner) scanIdent() (tok token, lit string) {
 	switch ch := s.read(); ch {
 	case '"':
 		return s.scanQuoted()
@@ -106,7 +106,7 @@ func (s *Scanner) scanIdent() (tok token, lit string) {
 	}
 }
 
-func (s *Scanner) scanBare() (token, string) {
+func (s *scanner) scanBare() (token, string) {
 	var buf bytes.Buffer
 	for {
 		if ch := s.read(); ch == eof {
@@ -132,7 +132,7 @@ func (s *Scanner) scanBare() (token, string) {
 }
 
 // scanBraced parses a braced string, like {this}.
-func (s *Scanner) scanBraced() (token, string) {
+func (s *scanner) scanBraced() (token, string) {
 	var buf bytes.Buffer
 	var macro bool
 	brace := 1
@@ -169,7 +169,7 @@ func (s *Scanner) scanBraced() (token, string) {
 }
 
 // scanQuoted parses a quoted string, like "this".
-func (s *Scanner) scanQuoted() (token, string) {
+func (s *scanner) scanQuoted() (token, string) {
 	var buf bytes.Buffer
 	brace := 0
 	for {
@@ -192,7 +192,7 @@ func (s *Scanner) scanQuoted() (token, string) {
 }
 
 // ignoreWhitespace consumes the current rune and all contiguous whitespace.
-func (s *Scanner) ignoreWhitespace() {
+func (s *scanner) ignoreWhitespace() {
 	for {
 		if ch := s.read(); ch == eof {
 			break

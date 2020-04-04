@@ -75,7 +75,7 @@ const bibtexInitialStackSize = 16
 
 // Parse is the entry point to the bibtex parser.
 func Parse(r io.Reader) (*BibTex, error) {
-	l := NewLexer(r)
+	l := newLexer(r)
 	bibtexParse(l)
 	select {
 	case err := <-l.Errors:
