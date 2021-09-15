@@ -1,4 +1,4 @@
-# bibtex [![Build Status](https://travis-ci.org/nickng/bibtex.svg?branch=master)](https://travis-ci.org/nickng/bibtex) [![GoDoc](https://godoc.org/github.com/nickng/bibtex?status.svg)](http://godoc.org/github.com/nickng/bibtex)
+# bibtex ![Build Status](https://github.com/nickng/bibtex/actions/workflows/test.yml/badge.svg) [![Go Reference](https://pkg.go.dev/badge/github.com/nickng/bibtex.svg)](https://pkg.go.dev/github.com/nickng/bibtex)
 
 ## `nickng/bibtex` is a bibtex parser and library for Go.
 
