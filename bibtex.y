@@ -69,7 +69,7 @@ tag : /* empty */                { }
     | tBAREIDENT tEQUAL longstring { $$ = &bibTag{key: $1, val: $3} }
     ;
 
-tags : tag            { $$ = []*bibTag{$1} }
+tags : tag            { if $1 != nil { $$ = []*bibTag{$1}; } }
      | tags tCOMMA tag { if $3 == nil { $$ = $1 } else { $$ = append($1, $3) } }
      ;
 
