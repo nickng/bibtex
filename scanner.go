@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -50,7 +49,7 @@ func (s *scanner) unread() {
 }
 
 // Scan returns the next token and literal value.
-func (s *scanner) Scan() (tok token, lit string) {
+func (s *scanner) Scan() (tok token, lit string, err error) {
 	ch := s.read()
 	if isWhitespace(ch) {
 		s.ignoreWhitespace()
@@ -62,47 +61,50 @@ func (s *scanner) Scan() (tok token, lit string) {
 	}
 	switch ch {
 	case eof:
-		return 0, ""
+		return 0, "", nil
 	case '@':
-		return tATSIGN, string(ch)
+		return tATSIGN, string(ch), nil
 	case ':':
-		return tCOLON, string(ch)
+		return tCOLON, string(ch), nil
 	case ',':
 		parseField = false // reset parseField if reached end of field.
-		return tCOMMA, string(ch)
+		return tCOMMA, string(ch), nil
 	case '=':
 		parseField = true // set parseField if = sign outside quoted or ident.
-		return tEQUAL, string(ch)
+		return tEQUAL, string(ch), nil
 	case '"':
-		return s.scanQuoted()
+		tok, lit := s.scanQuoted()
+		return tok, lit, nil
 	case '{':
 		if parseField {
 			return s.scanBraced()
 		}
-		return tLBRACE, string(ch)
+		return tLBRACE, string(ch), nil
 	case '}':
 		if parseField { // reset parseField if reached end of entry.
 			parseField = false
 		}
-		return tRBRACE, string(ch)
+		return tRBRACE, string(ch), nil
 	case '#':
-		return tPOUND, string(ch)
+		return tPOUND, string(ch), nil
 	case ' ':
 		s.ignoreWhitespace()
 	}
-	return tILLEGAL, string(ch)
+	return tILLEGAL, string(ch), nil
 }
 
 // scanIdent categorises a string to one of three categories.
-func (s *scanner) scanIdent() (tok token, lit string) {
+func (s *scanner) scanIdent() (tok token, lit string, err error) {
 	switch ch := s.read(); ch {
 	case '"':
-		return s.scanQuoted()
+		tok, lit := s.scanQuoted()
+		return tok, lit, nil
 	case '{':
 		return s.scanBraced()
 	default:
 		s.unread() // Not open quote/brace.
-		return s.scanBare()
+		tok, lit := s.scanBare()
+		return tok, lit, nil
 	}
 }
 
@@ -132,7 +134,7 @@ func (s *scanner) scanBare() (token, string) {
 }
 
 // scanBraced parses a braced string, like {this}.
-func (s *scanner) scanBraced() (token, string) {
+func (s *scanner) scanBraced() (token, string, error) {
 	var buf bytes.Buffer
 	var macro bool
 	brace := 1
@@ -149,14 +151,14 @@ func (s *scanner) scanBraced() (token, string) {
 			brace--
 			macro = false
 			if brace == 0 { // Balances open brace.
-				return tIDENT, buf.String()
+				return tIDENT, buf.String(), nil
 			}
 			_, _ = buf.WriteRune(ch)
 		} else if ch == '@' {
 			if macro {
 				_, _ = buf.WriteRune(ch)
 			} else {
-				log.Fatalf("%s: %s", ErrUnexpectedAtsign, buf.String())
+				return token(0), buf.String(), ErrUnexpectedAtsign
 			}
 		} else if isWhitespace(ch) {
 			_, _ = buf.WriteRune(ch)
@@ -165,7 +167,7 @@ func (s *scanner) scanBraced() (token, string) {
 			_, _ = buf.WriteRune(ch)
 		}
 	}
-	return tILLEGAL, buf.String()
+	return tILLEGAL, buf.String(), nil
 }
 
 // scanQuoted parses a quoted string, like "this".

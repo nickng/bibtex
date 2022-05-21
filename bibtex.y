@@ -80,7 +80,9 @@ func Parse(r io.Reader) (*BibTex, error) {
 	l := newLexer(r)
 	bibtexParse(l)
 	select {
-	case err := <-l.Errors:
+	case err := <-l.Errors: // Non-yacc errors
+		return nil, err
+	case err := <-l.ParseErrors:
 		return nil, err
 	default:
 		return bib, nil

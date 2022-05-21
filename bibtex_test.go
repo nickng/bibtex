@@ -2,6 +2,7 @@ package bibtex
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -142,6 +143,21 @@ func TestPrettyStringRoundTrip(t *testing.T) {
 
 		// Check equality.
 		AssertEntryListsEqual(t, bib.Entries, bib2.Entries)
+	}
+}
+
+func TestUnexpectedAtSign(t *testing.T) {
+	// Tests correct syntax but scanning error
+	b, err := ioutil.ReadFile("example/unexpected-at-sign.badbib")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = Parse(bytes.NewReader(b))
+	if err == nil {
+		t.Fatal("Expected error but got none")
+	}
+	if !errors.Is(err, ErrUnexpectedAtsign) {
+		t.Fatalf("expected error %+v but got %+v", ErrUnexpectedAtsign, err)
 	}
 }
 
