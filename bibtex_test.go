@@ -205,3 +205,27 @@ func BenchmarkStringPerformance(b *testing.B) {
 		_ = bib.String()
 	}
 }
+
+func TestBibEntry_PrettyStringCustomOrder(t *testing.T) {
+	wantPrettyString := `@inproceedings{bibtexKey,
+    author    = "A a and B b and C c",
+    editor    = "D d and E e",
+    title     = "Some title",
+    booktitle = "Some booktitle",
+}
+`
+
+	entry := NewBibEntry("inproceedings", "bibtexKey")
+	entry.AddField("author", NewBibConst("A a and B b and C c"))
+	entry.AddField("editor", NewBibConst("D d and E e"))
+	entry.AddField("title", NewBibConst("Some title"))
+	entry.AddField("booktitle", NewBibConst("Some booktitle"))
+
+	keyOrder := []string{"author", "editor", "title", "booktitle"}
+	gotPrettyString := entry.PrettyStringCustomOrder(keyOrder)
+
+	if wantPrettyString != gotPrettyString {
+		t.Errorf("Format error\nWant: %s\nGot:%s\n", wantPrettyString, gotPrettyString)
+	}
+
+}

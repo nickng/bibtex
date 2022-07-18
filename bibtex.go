@@ -11,6 +11,22 @@ import (
 	"time"
 )
 
+//prettyPrintDefaultKeyOrder controls the order in which BibEntry keys are printed
+//when using the PrettyString() instead of the PrettyStringCustom(keyOrder []string) variants.
+//Index 0 becomes first field and so on.
+var prettyPrintDefaultKeyOrder = []string{"title", "author", "url"}
+
+//keyOrderToPriorityMap is a helper function converting the user facing key order slice
+//into the map format that is internally used by the sort function
+func keyOrderToPriorityMap(keyOrder []string) map[string]int {
+	priority := make(map[string]int)
+	offset := len(keyOrder)
+	for i, v := range keyOrder {
+		priority[v] = i - offset
+	}
+	return priority
+}
+
 // BibString is a segment of a bib string.
 type BibString interface {
 	RawString() string // Internal representation.
@@ -113,6 +129,46 @@ func NewBibEntry(entryType string, citeName string) *BibEntry {
 // AddField adds a field (key-value) to a BibTeX entry.
 func (entry *BibEntry) AddField(name string, value BibString) {
 	entry.Fields[strings.TrimSpace(name)] = value
+}
+
+//prettyStringAppend appends the pretty print string for BibEntry to buf using priority to order the keys
+func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, priority map[string]int) {
+	fmt.Fprintf(buf, "@%s{%s,\n", entry.Type, entry.CiteName)
+
+	// Determine key order.
+	keys := []string{}
+	for key := range entry.Fields {
+		keys = append(keys, key)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		pi, pj := priority[keys[i]], priority[keys[j]]
+		return pi < pj || (pi == pj && keys[i] < keys[j])
+	})
+
+	// Write fields.
+	tw := tabwriter.NewWriter(buf, 1, 4, 1, ' ', 0)
+	for _, key := range keys {
+		value := entry.Fields[key].String()
+		format := stringformat(value)
+		fmt.Fprintf(tw, "    %s\t=\t"+format+",\n", key, value)
+	}
+	tw.Flush()
+	buf.WriteString("}\n")
+
+}
+
+//PrettyStringCustomOrder pretty prints BibEntry with fields ordered as they appear
+//in keyOrder
+func (entry *BibEntry) PrettyStringCustomOrder(keyOrder []string) string {
+	priority := keyOrderToPriorityMap(keyOrder)
+	var buf bytes.Buffer
+	entry.prettyStringAppend(&buf, priority)
+	return buf.String()
+}
+
+func (entry *BibEntry) PrettyString() string {
+	return entry.PrettyStringCustomOrder(prettyPrintDefaultKeyOrder)
 }
 
 // String returns a BibTex entry as a simplified BibTex string.
@@ -247,41 +303,22 @@ func (bib *BibTex) RawString() string {
 	return bibtex.String()
 }
 
-// PrettyString pretty prints a BibTex.
-func (bib *BibTex) PrettyString() string {
+//PrettyStringCustomOrder pretty prints a BibTex with each BibEntry's keys ordered as they appear in keyOrder
+func (bib *BibTex) PrettyStringCustomOrder(keyOrder []string) string {
 	var buf bytes.Buffer
 	for i, entry := range bib.Entries {
 		if i != 0 {
 			fmt.Fprint(&buf, "\n")
 		}
-		fmt.Fprintf(&buf, "@%s{%s,\n", entry.Type, entry.CiteName)
+		entry.prettyStringAppend(&buf, keyOrderToPriorityMap(keyOrder))
 
-		// Determine key order.
-		keys := []string{}
-		for key := range entry.Fields {
-			keys = append(keys, key)
-		}
-
-		priority := map[string]int{"title": -3, "author": -2, "url": -1}
-		sort.Slice(keys, func(i, j int) bool {
-			pi, pj := priority[keys[i]], priority[keys[j]]
-			return pi < pj || (pi == pj && keys[i] < keys[j])
-		})
-
-		// Write fields.
-		tw := tabwriter.NewWriter(&buf, 1, 4, 1, ' ', 0)
-		for _, key := range keys {
-			value := entry.Fields[key].String()
-			format := stringformat(value)
-			fmt.Fprintf(tw, "    %s\t=\t"+format+",\n", key, value)
-		}
-		tw.Flush()
-
-		// Close.
-		buf.WriteString("}\n")
 	}
 	return buf.String()
+}
 
+// PrettyString pretty prints a BibTex.
+func (bib *BibTex) PrettyString() string {
+	return bib.PrettyStringCustomOrder(prettyPrintDefaultKeyOrder)
 }
 
 // stringformat determines the correct formatting verb for the given BibTeX field value.
