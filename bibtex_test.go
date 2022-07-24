@@ -222,10 +222,19 @@ func TestBibEntry_PrettyStringCustomOrder(t *testing.T) {
 	entry.AddField("booktitle", NewBibConst("Some booktitle"))
 
 	keyOrder := []string{"author", "editor", "title", "booktitle"}
-	gotPrettyString := entry.PrettyStringCustomOrder(keyOrder)
+	gotPrettyString := entry.PrettyString(WithKeyOrder(keyOrder))
 
 	if wantPrettyString != gotPrettyString {
 		t.Errorf("Format error\nWant: %s\nGot:%s\n", wantPrettyString, gotPrettyString)
+	}
+
+	// pretty print same entry with different order and check that result no longer matchnes
+	// wantPrettyString
+	errorKeyOrder := []string{"editor", "author", "title", "booktitle"}
+	gotPrettyString = entry.PrettyString(WithKeyOrder(errorKeyOrder))
+
+	if wantPrettyString == gotPrettyString {
+		t.Errorf("Format error. Expected missmatch but got match")
 	}
 
 }

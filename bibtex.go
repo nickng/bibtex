@@ -11,22 +11,6 @@ import (
 	"time"
 )
 
-//prettyPrintDefaultKeyOrder controls the order in which BibEntry keys are printed
-//when using the PrettyString() instead of the PrettyStringCustom(keyOrder []string) variants.
-//Index 0 becomes first field and so on.
-var prettyPrintDefaultKeyOrder = []string{"title", "author", "url"}
-
-//keyOrderToPriorityMap is a helper function converting the user facing key order slice
-//into the map format that is internally used by the sort function
-func keyOrderToPriorityMap(keyOrder []string) map[string]int {
-	priority := make(map[string]int)
-	offset := len(keyOrder)
-	for i, v := range keyOrder {
-		priority[v] = i - offset
-	}
-	return priority
-}
-
 // BibString is a segment of a bib string.
 type BibString interface {
 	RawString() string // Internal representation.
@@ -131,8 +115,42 @@ func (entry *BibEntry) AddField(name string, value BibString) {
 	entry.Fields[strings.TrimSpace(name)] = value
 }
 
-//prettyStringAppend appends the pretty print string for BibEntry to buf using priority to order the keys
-func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, priority map[string]int) {
+// prettyStringConfig controls the formatting/printing behaviour of the BibTex's and BibEntry's PrettyPrint functions
+type prettyStringConfig struct {
+	// priority controls the order in which fields are printed. Keys with lower values are printed earlier.
+	//See keyOrderToPriorityMap
+	priority map[string]int
+}
+
+// keyOrderToPriorityMap is a helper function for WithKeyOrder, converting the user facing key order slice
+// into the map format that is internally used by the sort function
+func keyOrderToPriorityMap(keyOrder []string) map[string]int {
+	priority := make(map[string]int)
+	offset := len(keyOrder)
+	for i, v := range keyOrder {
+		priority[v] = i - offset
+	}
+	return priority
+}
+
+var defaultPrettyStringConfig = prettyStringConfig{priority: keyOrderToPriorityMap([]string{"title", "author", "url"})}
+
+// PrettyStringOpt allows to change the pretty print format for BibEntry and BibTex
+type PrettyStringOpt func(config *prettyStringConfig)
+
+// WithKeyOrder changes the order in which BibEntry keys are printed to the order in which they appear in keyOrder
+func WithKeyOrder(keyOrder []string) PrettyStringOpt {
+	return func(config *prettyStringConfig) {
+		config.priority = make(map[string]int)
+		offset := len(keyOrder)
+		for i, v := range keyOrder {
+			config.priority[v] = i - offset
+		}
+	}
+}
+
+// prettyStringAppend appends the pretty print string for BibEntry using config to configure the formatting
+func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, config prettyStringConfig) {
 	fmt.Fprintf(buf, "@%s{%s,\n", entry.Type, entry.CiteName)
 
 	// Determine key order.
@@ -142,7 +160,7 @@ func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, priority map[string
 	}
 
 	sort.Slice(keys, func(i, j int) bool {
-		pi, pj := priority[keys[i]], priority[keys[j]]
+		pi, pj := config.priority[keys[i]], config.priority[keys[j]]
 		return pi < pj || (pi == pj && keys[i] < keys[j])
 	})
 
@@ -158,17 +176,16 @@ func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, priority map[string
 
 }
 
-//PrettyStringCustomOrder pretty prints BibEntry with fields ordered as they appear
-//in keyOrder
-func (entry *BibEntry) PrettyStringCustomOrder(keyOrder []string) string {
-	priority := keyOrderToPriorityMap(keyOrder)
+// PrettyString pretty prints a BibEntry
+func (entry *BibEntry) PrettyString(options ...PrettyStringOpt) string {
+	config := defaultPrettyStringConfig
+	for _, option := range options {
+		option(&config)
+	}
 	var buf bytes.Buffer
-	entry.prettyStringAppend(&buf, priority)
-	return buf.String()
-}
+	entry.prettyStringAppend(&buf, config)
 
-func (entry *BibEntry) PrettyString() string {
-	return entry.PrettyStringCustomOrder(prettyPrintDefaultKeyOrder)
+	return buf.String()
 }
 
 // String returns a BibTex entry as a simplified BibTex string.
@@ -303,22 +320,22 @@ func (bib *BibTex) RawString() string {
 	return bibtex.String()
 }
 
-//PrettyStringCustomOrder pretty prints a BibTex with each BibEntry's keys ordered as they appear in keyOrder
-func (bib *BibTex) PrettyStringCustomOrder(keyOrder []string) string {
+// PrettyString pretty prints a BibTex
+func (bib *BibTex) PrettyString(options ...PrettyStringOpt) string {
+	config := defaultPrettyStringConfig
+	for _, option := range options {
+		option(&config)
+	}
+
 	var buf bytes.Buffer
 	for i, entry := range bib.Entries {
 		if i != 0 {
 			fmt.Fprint(&buf, "\n")
 		}
-		entry.prettyStringAppend(&buf, keyOrderToPriorityMap(keyOrder))
+		entry.prettyStringAppend(&buf, config)
 
 	}
 	return buf.String()
-}
-
-// PrettyString pretty prints a BibTex.
-func (bib *BibTex) PrettyString() string {
-	return bib.PrettyStringCustomOrder(prettyPrintDefaultKeyOrder)
 }
 
 // stringformat determines the correct formatting verb for the given BibTeX field value.
