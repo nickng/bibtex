@@ -115,6 +115,79 @@ func (entry *BibEntry) AddField(name string, value BibString) {
 	entry.Fields[strings.TrimSpace(name)] = value
 }
 
+// prettyStringConfig controls the formatting/printing behaviour of the BibTex's and BibEntry's PrettyPrint functions
+type prettyStringConfig struct {
+	// priority controls the order in which fields are printed. Keys with lower values are printed earlier.
+	//See keyOrderToPriorityMap
+	priority map[string]int
+}
+
+// keyOrderToPriorityMap is a helper function for WithKeyOrder, converting the user facing key order slice
+// into the map format that is internally used by the sort function
+func keyOrderToPriorityMap(keyOrder []string) map[string]int {
+	priority := make(map[string]int)
+	offset := len(keyOrder)
+	for i, v := range keyOrder {
+		priority[v] = i - offset
+	}
+	return priority
+}
+
+var defaultPrettyStringConfig = prettyStringConfig{priority: keyOrderToPriorityMap([]string{"title", "author", "url"})}
+
+// PrettyStringOpt allows to change the pretty print format for BibEntry and BibTex
+type PrettyStringOpt func(config *prettyStringConfig)
+
+// WithKeyOrder changes the order in which BibEntry keys are printed to the order in which they appear in keyOrder
+func WithKeyOrder(keyOrder []string) PrettyStringOpt {
+	return func(config *prettyStringConfig) {
+		config.priority = make(map[string]int)
+		offset := len(keyOrder)
+		for i, v := range keyOrder {
+			config.priority[v] = i - offset
+		}
+	}
+}
+
+// prettyStringAppend appends the pretty print string for BibEntry using config to configure the formatting
+func (entry *BibEntry) prettyStringAppend(buf *bytes.Buffer, config prettyStringConfig) {
+	fmt.Fprintf(buf, "@%s{%s,\n", entry.Type, entry.CiteName)
+
+	// Determine key order.
+	keys := []string{}
+	for key := range entry.Fields {
+		keys = append(keys, key)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		pi, pj := config.priority[keys[i]], config.priority[keys[j]]
+		return pi < pj || (pi == pj && keys[i] < keys[j])
+	})
+
+	// Write fields.
+	tw := tabwriter.NewWriter(buf, 1, 4, 1, ' ', 0)
+	for _, key := range keys {
+		value := entry.Fields[key].String()
+		format := stringformat(value)
+		fmt.Fprintf(tw, "    %s\t=\t"+format+",\n", key, value)
+	}
+	tw.Flush()
+	buf.WriteString("}\n")
+
+}
+
+// PrettyString pretty prints a BibEntry
+func (entry *BibEntry) PrettyString(options ...PrettyStringOpt) string {
+	config := defaultPrettyStringConfig
+	for _, option := range options {
+		option(&config)
+	}
+	var buf bytes.Buffer
+	entry.prettyStringAppend(&buf, config)
+
+	return buf.String()
+}
+
 // String returns a BibTex entry as a simplified BibTex string.
 func (entry *BibEntry) String() string {
 	var bibtex bytes.Buffer
@@ -247,41 +320,22 @@ func (bib *BibTex) RawString() string {
 	return bibtex.String()
 }
 
-// PrettyString pretty prints a BibTex.
-func (bib *BibTex) PrettyString() string {
+// PrettyString pretty prints a BibTex
+func (bib *BibTex) PrettyString(options ...PrettyStringOpt) string {
+	config := defaultPrettyStringConfig
+	for _, option := range options {
+		option(&config)
+	}
+
 	var buf bytes.Buffer
 	for i, entry := range bib.Entries {
 		if i != 0 {
 			fmt.Fprint(&buf, "\n")
 		}
-		fmt.Fprintf(&buf, "@%s{%s,\n", entry.Type, entry.CiteName)
+		entry.prettyStringAppend(&buf, config)
 
-		// Determine key order.
-		keys := []string{}
-		for key := range entry.Fields {
-			keys = append(keys, key)
-		}
-
-		priority := map[string]int{"title": -3, "author": -2, "url": -1}
-		sort.Slice(keys, func(i, j int) bool {
-			pi, pj := priority[keys[i]], priority[keys[j]]
-			return pi < pj || (pi == pj && keys[i] < keys[j])
-		})
-
-		// Write fields.
-		tw := tabwriter.NewWriter(&buf, 1, 4, 1, ' ', 0)
-		for _, key := range keys {
-			value := entry.Fields[key].String()
-			format := stringformat(value)
-			fmt.Fprintf(tw, "    %s\t=\t"+format+",\n", key, value)
-		}
-		tw.Flush()
-
-		// Close.
-		buf.WriteString("}\n")
 	}
 	return buf.String()
-
 }
 
 // stringformat determines the correct formatting verb for the given BibTeX field value.
