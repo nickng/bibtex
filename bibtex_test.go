@@ -49,7 +49,7 @@ func TestString(t *testing.T) {
 	bibtex := NewBibTex()
 	bibtex.AddStringVar("cat", &BibVar{Key: "cat", Value: NewBibConst("meowmeow")})
 	entry := NewBibEntry("article", "abcd")
-	entry.AddField("title", bibtex.GetStringVar("cat"))
+	entry.AddField("title", bibtex.MustGetStringVar("cat"))
 	bibtex.AddEntry(entry)
 
 	expected := `@article{abcd,
@@ -80,6 +80,20 @@ func TestParser(t *testing.T) {
 			t.Errorf("Cannot parse valid bibtex file %s: %v", ex, err)
 		}
 	}
+}
+
+// TestParser_ErrorHandling checks that the parser returns an error value for malformed bibtex
+func TestParser_ErrorHandling(t *testing.T) {
+	input := `
+@inproceedings{A,
+  title = thisIsInvalid,
+
+}`
+	_, err := Parse(strings.NewReader(input))
+	if err == nil {
+		t.Fatalf("Expected parser error got none")
+	}
+
 }
 
 // Tests that multiple parse returns different instances of the parsed BibTex.
