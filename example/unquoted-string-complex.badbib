@@ -1,0 +1,7 @@
+@article{agneroptimize,
+  title={The microarchitecture of Intel, AMD and VIA CPUs: An optimization guide for assembly programmers and compiler makers},
+  author={Fog, Agner},
+  journal=Copenhagen University College of Engineering,
+  pages={02--29},
+  year={2012}
+}
