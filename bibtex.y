@@ -79,11 +79,11 @@ tags : tag            { if $1 != nil { $$ = []*bibTag{$1}; } }
 func Parse(r io.Reader) (*BibTex, error) {
 	l := newLexer(r)
 	bibtexParse(l)
-	select {
-	case err := <-l.Errors: // Non-yacc errors
-		return nil, err
-	case err := <-l.ParseErrors:
-		return nil, err
+	switch {
+	case len(l.Errors) > 0: // Non-yacc errors
+		return nil, l.Errors[0]
+	case len(l.ParseErrors) > 0:
+		return nil, l.ParseErrors[0]
 	default:
 		return bib, nil
 	}
