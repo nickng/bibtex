@@ -3,7 +3,6 @@ package bibtex
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -272,16 +271,24 @@ func (bib *BibTex) AddStringVar(key string, val BibString) {
 }
 
 // GetStringVar looks up a string by its key.
-func (bib *BibTex) GetStringVar(key string) *BibVar {
+func (bib *BibTex) GetStringVar(key string) (*BibVar, error) {
 	if bv, ok := bib.StringVar[key]; ok {
-		return bv
+		return bv, nil
 	}
 	if v, ok := bib.getDefaultVar(key); ok {
-		return v
+		return v, nil
 	}
 	// This is undefined.
-	log.Fatalf("%s: %s", ErrUnknownStringVar, key)
-	return nil
+	return nil, fmt.Errorf("%s: %s", ErrUnknownStringVar, key)
+}
+
+// MustGetStringVar is like GetStringVar but panics on errors
+func (bib *BibTex) MustGetStringVar(key string) *BibVar {
+	v, err := bib.GetStringVar(key)
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
 
 // getDefaultVar is a fallback for looking up keys (e.g. 3-character month)

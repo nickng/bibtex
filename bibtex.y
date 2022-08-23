@@ -3,6 +3,7 @@ package bibtex
 
 import (
 	"io"
+	"fmt"
 )
 
 type bibTag struct {
@@ -60,9 +61,9 @@ preambleentry : tATSIGN tPREAMBLE tLBRACE longstring tRBRACE { $$ = $4 }
               ;
 
 longstring :                  tIDENT     { $$ = NewBibConst($1) }
-           |                  tBAREIDENT { $$ = bib.GetStringVar($1) }
+           |                  tBAREIDENT { v,err := bib.GetStringVar($1); if err != nil { bibtexlex.Error(fmt.Sprintf("%v",err)) } else {$$ = v} }
            | longstring tPOUND tIDENT     { $$ = NewBibComposite($1); $$.(*BibComposite).Append(NewBibConst($3))}
-           | longstring tPOUND tBAREIDENT { $$ = NewBibComposite($1); $$.(*BibComposite).Append(bib.GetStringVar($3)) }
+           | longstring tPOUND tBAREIDENT { $$ = NewBibComposite($1); v,err := bib.GetStringVar($3); if err != nil {bibtexlex.Error(fmt.Sprintf("%v",err))}  else {$$.(*BibComposite).Append(v)} }
            ;
 
 tag : /* empty */                { }

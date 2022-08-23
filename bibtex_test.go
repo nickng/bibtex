@@ -49,7 +49,7 @@ func TestString(t *testing.T) {
 	bibtex := NewBibTex()
 	bibtex.AddStringVar("cat", &BibVar{Key: "cat", Value: NewBibConst("meowmeow")})
 	entry := NewBibEntry("article", "abcd")
-	entry.AddField("title", bibtex.GetStringVar("cat"))
+	entry.AddField("title", bibtex.MustGetStringVar("cat"))
 	bibtex.AddEntry(entry)
 
 	expected := `@article{abcd,
@@ -80,6 +80,56 @@ func TestParser(t *testing.T) {
 			t.Errorf("Cannot parse valid bibtex file %s: %v", ex, err)
 		}
 	}
+}
+
+// TestParser_ErrorHandling checks that the parser returns an error value for malformed bibtex
+func TestParser_ErrorHandling(t *testing.T) {
+	examples, err := filepath.Glob("example/*.badbib")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, ex := range examples {
+		t.Logf("Parsing example: %s", ex)
+		b, err := ioutil.ReadFile(ex)
+		if err != nil {
+			t.Errorf("Cannot read %s: %v", ex, err)
+		}
+		_, err = Parse(bytes.NewReader(b))
+		if err == nil {
+			t.Fatalf("Expected parser error got none")
+		}
+	}
+
+}
+
+// TestParser_ErrorHandling checks that the parser returns an error value for malformed bibtex
+func TestParser_ParseGoodEntryAfterBadEntry(t *testing.T) {
+	goodEntry := `@article{agneroptimize,
+  title={The microarchitecture of Intel, AMD and VIA CPUs: An optimization guide for assembly programmers and compiler makers},
+  author={Fog, Agner},
+  journal={Copenhagen University College of Engineering},
+  pages={02--29},
+  year={2012}
+}`
+	badEntry := `@article{agneroptimize,
+  title={The microarchitecture of Intel, AMD and VIA CPUs: An optimization guide for assembly programmers and compiler makers},
+  author={Fog, Agner},
+  journal=Copenhagen University College of Engineering,
+  pages={02--29},
+  year={2012}
+}`
+
+	_, err := Parse(strings.NewReader(badEntry))
+	if err == nil {
+		t.Fatal("Expected parser error got none")
+	}
+
+	_, err = Parse(strings.NewReader(goodEntry))
+	if err != nil {
+		t.Fatalf("Did not expect parser error but got %v", err)
+	}
+
 }
 
 // Tests that multiple parse returns different instances of the parsed BibTex.
