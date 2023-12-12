@@ -12,8 +12,9 @@ var parseField bool
 
 // scanner is a lexical scanner
 type scanner struct {
-	r   *bufio.Reader
-	pos tokenPos
+	commentMode bool
+	r           *bufio.Reader
+	pos         tokenPos
 }
 
 // newScanner returns a new instance of scanner.
@@ -79,6 +80,13 @@ func (s *scanner) Scan() (tok token, lit string, err error) {
 		if parseField {
 			return s.scanBraced()
 		}
+		// If we're reading a comment, return everything after {
+		// to the next @-sign (exclusive)
+		if s.commentMode {
+			s.unread()
+			commentBodyTok, commentBody := s.scanCommentBody()
+			return commentBodyTok, commentBody, nil
+		}
 		return tLBRACE, string(ch), nil
 	case '}':
 		if parseField { // reset parseField if reached end of entry.
@@ -122,6 +130,7 @@ func (s *scanner) scanBare() (token, string) {
 	}
 	str := buf.String()
 	if strings.ToLower(str) == "comment" {
+		s.commentMode = true
 		return tCOMMENT, str
 	} else if strings.ToLower(str) == "preamble" {
 		return tPREAMBLE, str
@@ -191,6 +200,28 @@ func (s *scanner) scanQuoted() (token, string) {
 		}
 	}
 	return tILLEGAL, buf.String()
+}
+
+// skipCommentBody is a scan method used for reading bibtex
+// comment item by reading all runes until the next @.
+//
+// e.g.
+// @comment{...anything can go here even if braces are unbalanced@
+// comment body string will be "...anything can go here even if braces are unbalanced"
+func (s *scanner) scanCommentBody() (token, string) {
+	var buf bytes.Buffer
+	for {
+		if ch := s.read(); ch == eof {
+			break
+		} else if ch == '@' {
+			s.unread()
+			break
+		} else {
+			_, _ = buf.WriteRune(ch)
+		}
+	}
+	s.commentMode = false
+	return tCOMMENTBODY, buf.String()
 }
 
 // ignoreWhitespace consumes the current rune and all contiguous whitespace.
