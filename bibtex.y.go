@@ -44,6 +44,7 @@ const tLPAREN = 57357
 const tRPAREN = 57358
 const tBAREIDENT = 57359
 const tIDENT = 57360
+const tCOMMENTBODY = 57361
 
 var bibtexToknames = [...]string{
 	"$end",
@@ -64,6 +65,7 @@ var bibtexToknames = [...]string{
 	"tRPAREN",
 	"tBAREIDENT",
 	"tIDENT",
+	"tCOMMENTBODY",
 }
 var bibtexStatenames = [...]string{}
 
@@ -71,7 +73,7 @@ const bibtexEofCode = 1
 const bibtexErrCode = 2
 const bibtexInitialStackSize = 16
 
-//line bibtex.y:76
+//line bibtex.y:75
 
 // Parse is the entry point to the bibtex parser.
 func Parse(r io.Reader) (*BibTex, error) {
@@ -96,60 +98,56 @@ var bibtexExca = [...]int{
 
 const bibtexPrivate = 57344
 
-const bibtexLast = 61
+const bibtexLast = 54
 
 var bibtexAct = [...]int{
 
-	22, 39, 40, 41, 9, 10, 11, 24, 23, 44,
-	43, 27, 48, 26, 21, 20, 25, 8, 50, 28,
-	29, 33, 33, 49, 18, 16, 38, 19, 17, 14,
-	31, 12, 15, 42, 13, 30, 45, 46, 33, 33,
-	52, 51, 48, 36, 33, 47, 37, 33, 35, 34,
-	54, 53, 33, 7, 32, 4, 1, 6, 5, 3,
-	2,
+	23, 14, 35, 34, 9, 10, 11, 25, 24, 41,
+	40, 36, 43, 22, 21, 32, 20, 8, 45, 26,
+	33, 17, 19, 15, 18, 12, 16, 32, 13, 47,
+	38, 39, 37, 32, 43, 46, 32, 42, 31, 32,
+	28, 27, 44, 30, 29, 49, 48, 7, 4, 1,
+	6, 5, 3, 2,
 }
 var bibtexPact = [...]int{
 
-	-1000, -1000, 46, -1000, -1000, -1000, -1000, 0, 19, 17,
-	13, 12, -2, -3, -10, -10, -4, -6, -10, -10,
-	25, 20, 41, -1000, -1000, 36, 39, 34, 33, 10,
-	-14, -14, -1000, -8, -1000, -10, -10, -1000, -1000, 32,
-	-1000, 14, 2, -1000, -1000, 28, 27, -1000, -14, -10,
-	-1000, -1000, -1000, -1000, 11,
+	-1000, -1000, 40, -1000, -1000, -1000, -1000, 0, 13, -18,
+	11, 9, 5, -1, -1000, -3, -4, -10, -10, 31,
+	30, 35, 34, 25, -1000, -1000, 4, -6, -6, -10,
+	-10, -1000, -8, -1000, 24, -1000, 33, 2, 22, 16,
+	-1000, -1000, -1000, -6, -10, -1000, -1000, -1000, -1000, 28,
 }
 var bibtexPgo = [...]int{
 
-	0, 60, 59, 2, 58, 1, 0, 57, 56, 55,
+	0, 53, 52, 2, 51, 3, 0, 50, 49, 48,
 }
 var bibtexR1 = [...]int{
 
 	0, 8, 1, 1, 1, 1, 1, 2, 2, 9,
-	9, 4, 4, 7, 7, 6, 6, 6, 6, 3,
-	3, 5, 5,
+	4, 4, 7, 7, 6, 6, 6, 6, 3, 3,
+	5, 5,
 }
 var bibtexR2 = [...]int{
 
-	0, 1, 0, 2, 2, 2, 2, 7, 7, 5,
-	5, 7, 7, 5, 5, 1, 1, 3, 3, 0,
-	3, 1, 3,
+	0, 1, 0, 2, 2, 2, 2, 7, 7, 3,
+	7, 7, 5, 5, 1, 1, 3, 3, 0, 3,
+	1, 3,
 }
 var bibtexChk = [...]int{
 
 	-1000, -8, -1, -2, -9, -4, -7, 7, 17, 4,
-	5, 6, 12, 15, 12, 15, 12, 15, 12, 15,
-	17, 17, -6, 18, 17, -6, 17, 17, -6, -6,
-	10, 10, 13, 11, 13, 9, 9, 13, 16, -5,
-	-3, 17, -5, 18, 17, -6, -6, 13, 10, 9,
-	16, 13, 13, -3, -6,
+	5, 6, 12, 15, 19, 12, 15, 12, 15, 17,
+	17, 17, 17, -6, 18, 17, -6, 10, 10, 9,
+	9, 13, 11, 16, -5, -3, 17, -5, -6, -6,
+	18, 17, 13, 10, 9, 16, 13, 13, -3, -6,
 }
 var bibtexDef = [...]int{
 
 	2, -2, 1, 3, 4, 5, 6, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 15, 16, 0, 0, 0, 0, 0,
-	19, 19, 9, 0, 10, 0, 0, 13, 14, 0,
-	21, 0, 0, 17, 18, 0, 0, 7, 19, 0,
-	8, 11, 12, 22, 20,
+	0, 0, 0, 0, 9, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 14, 15, 0, 18, 18, 0,
+	0, 12, 0, 13, 0, 20, 0, 0, 0, 0,
+	16, 17, 7, 18, 0, 8, 10, 11, 21, 19,
 }
 var bibtexTok1 = [...]int{
 
@@ -158,7 +156,7 @@ var bibtexTok1 = [...]int{
 var bibtexTok2 = [...]int{
 
 	2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-	12, 13, 14, 15, 16, 17, 18,
+	12, 13, 14, 15, 16, 17, 18, 19,
 }
 var bibtexTok3 = [...]int{
 	0,
@@ -559,14 +557,15 @@ bibtexdefault:
 			}
 		}
 	case 9:
-		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
+		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
 //line bibtex.y:50
 		{
 		}
 	case 10:
-		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-//line bibtex.y:51
+		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
+//line bibtex.y:53
 		{
+			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[4].strval, val: bibtexDollar[6].strings}
 		}
 	case 11:
 		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
@@ -575,10 +574,10 @@ bibtexdefault:
 			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[4].strval, val: bibtexDollar[6].strings}
 		}
 	case 12:
-		bibtexDollar = bibtexS[bibtexpt-7 : bibtexpt+1]
-//line bibtex.y:55
+		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
+//line bibtex.y:57
 		{
-			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[4].strval, val: bibtexDollar[6].strings}
+			bibtexVAL.strings = bibtexDollar[4].strings
 		}
 	case 13:
 		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
@@ -587,59 +586,53 @@ bibtexdefault:
 			bibtexVAL.strings = bibtexDollar[4].strings
 		}
 	case 14:
-		bibtexDollar = bibtexS[bibtexpt-5 : bibtexpt+1]
-//line bibtex.y:59
+		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
+//line bibtex.y:61
 		{
-			bibtexVAL.strings = bibtexDollar[4].strings
+			bibtexVAL.strings = NewBibConst(bibtexDollar[1].strval)
 		}
 	case 15:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
 //line bibtex.y:62
 		{
-			bibtexVAL.strings = NewBibConst(bibtexDollar[1].strval)
+			bibtexVAL.strings = bib.GetStringVar(bibtexDollar[1].strval)
 		}
 	case 16:
-		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
+		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
 //line bibtex.y:63
 		{
-			bibtexVAL.strings = bib.GetStringVar(bibtexDollar[1].strval)
+			bibtexVAL.strings = NewBibComposite(bibtexDollar[1].strings)
+			bibtexVAL.strings.(*BibComposite).Append(NewBibConst(bibtexDollar[3].strval))
 		}
 	case 17:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
 //line bibtex.y:64
 		{
 			bibtexVAL.strings = NewBibComposite(bibtexDollar[1].strings)
-			bibtexVAL.strings.(*BibComposite).Append(NewBibConst(bibtexDollar[3].strval))
-		}
-	case 18:
-		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-//line bibtex.y:65
-		{
-			bibtexVAL.strings = NewBibComposite(bibtexDollar[1].strings)
 			bibtexVAL.strings.(*BibComposite).Append(bib.GetStringVar(bibtexDollar[3].strval))
 		}
-	case 19:
+	case 18:
 		bibtexDollar = bibtexS[bibtexpt-0 : bibtexpt+1]
-//line bibtex.y:68
+//line bibtex.y:67
 		{
 		}
-	case 20:
+	case 19:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-//line bibtex.y:69
+//line bibtex.y:68
 		{
 			bibtexVAL.bibtag = &bibTag{key: bibtexDollar[1].strval, val: bibtexDollar[3].strings}
 		}
-	case 21:
+	case 20:
 		bibtexDollar = bibtexS[bibtexpt-1 : bibtexpt+1]
-//line bibtex.y:72
+//line bibtex.y:71
 		{
 			if bibtexDollar[1].bibtag != nil {
 				bibtexVAL.bibtags = []*bibTag{bibtexDollar[1].bibtag}
 			}
 		}
-	case 22:
+	case 21:
 		bibtexDollar = bibtexS[bibtexpt-3 : bibtexpt+1]
-//line bibtex.y:73
+//line bibtex.y:72
 		{
 			if bibtexDollar[3].bibtag == nil {
 				bibtexVAL.bibtags = bibtexDollar[1].bibtags

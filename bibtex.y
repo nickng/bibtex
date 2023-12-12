@@ -24,7 +24,7 @@ var bib *BibTex // Only for holding current bib
 
 %token tCOMMENT tSTRING tPREAMBLE
 %token tATSIGN tCOLON tEQUAL tCOMMA tPOUND tLBRACE tRBRACE tDQUOTE tLPAREN tRPAREN
-%token <strval> tBAREIDENT tIDENT
+%token <strval> tBAREIDENT tIDENT tCOMMENTBODY
 %type <bibtex> bibtex
 %type <bibentry> bibentry
 %type <bibtag> tag stringentry
@@ -47,8 +47,7 @@ bibentry : tATSIGN tBAREIDENT tLBRACE tBAREIDENT tCOMMA tags tRBRACE { $$ = NewB
          | tATSIGN tBAREIDENT tLPAREN tBAREIDENT tCOMMA tags tRPAREN { $$ = NewBibEntry($2, $4); for _, t := range $6 { $$.AddField(t.key, t.val) } }
          ;
 
-commententry : tATSIGN tCOMMENT tLBRACE longstring tRBRACE {}
-             | tATSIGN tCOMMENT tLPAREN longstring tRBRACE {}
+commententry : tATSIGN tCOMMENT tCOMMENTBODY { }
              ;
 
 stringentry : tATSIGN tSTRING tLBRACE tBAREIDENT tEQUAL longstring tRBRACE { $$ = &bibTag{key: $4, val: $6 } }
