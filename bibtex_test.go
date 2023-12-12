@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -71,7 +71,7 @@ func TestParser(t *testing.T) {
 
 	for _, ex := range examples {
 		t.Logf("Parsing example: %s", ex)
-		b, err := ioutil.ReadFile(ex)
+		b, err := os.ReadFile(ex)
 		if err != nil {
 			t.Errorf("Cannot read %s: %v", ex, err)
 		}
@@ -89,12 +89,13 @@ func TestMultiParse(t *testing.T) {
 		"example/simple.bib",
 		"example/simple.bib",
 		"example/simple.bib",
+		"example/simple2.bib", // simple but with comment
 	}
 
 	var bibs []*BibTex
 	for _, ex := range examples {
 		t.Logf("Parsing example: %s", ex)
-		b, err := ioutil.ReadFile(ex)
+		b, err := os.ReadFile(ex)
 		if err != nil {
 			t.Errorf("Cannot read %s: %v", ex, err)
 		}
@@ -122,7 +123,7 @@ func TestPrettyStringRoundTrip(t *testing.T) {
 
 	for _, ex := range examples {
 		// Read input.
-		b, err := ioutil.ReadFile(ex)
+		b, err := os.ReadFile(ex)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -148,7 +149,7 @@ func TestPrettyStringRoundTrip(t *testing.T) {
 
 func TestUnexpectedAtSign(t *testing.T) {
 	// Tests correct syntax but scanning error
-	b, err := ioutil.ReadFile("example/unexpected-at-sign.badbib")
+	b, err := os.ReadFile("example/unexpected-at-sign.badbib")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,7 +192,7 @@ func AssertEntriesEqual(t *testing.T, a, b *BibEntry) {
 }
 
 func BenchmarkStringPerformance(b *testing.B) {
-	exampleFileBytes, err := ioutil.ReadFile("example/biblatex-examples.bib")
+	exampleFileBytes, err := os.ReadFile("example/biblatex-examples.bib")
 	if err != nil {
 		b.Fatal(err)
 	}
