@@ -82,6 +82,35 @@ func TestParser(t *testing.T) {
 	}
 }
 
+// Test bug (Issue #24) where there is no parse error, but fields are missing
+func TestTextOutsideEntries(t *testing.T) {
+	// Re-create the exact failing scenario
+	expected := NewBibTex()
+	entry := NewBibEntry("article", "CitekeyArticle")
+	entry.AddField("author", NewBibConst("John Doe"))
+	entry.AddField("title", NewBibConst("The independence of the continuum hypothesis"))
+	entry.AddField("journal", NewBibConst("Proceedings of the National Academy of Sciences"))
+	entry.AddField("year", NewBibConst("1963"))
+	entry.AddField("volume", NewBibConst("50"))
+	entry.AddField("number", NewBibConst("6"))
+	entry.AddField("pages", NewBibConst("1143--1148"))
+	expected.AddEntry(entry)
+
+	// Parse file with same data as above, also with text in between the entries
+	ex := "example/text-outside-entries.bib"
+	b, err := os.ReadFile(ex)
+	if err != nil {
+		t.Errorf("Cannot read %s: %v", ex, err)
+	}
+	s, err := Parse(bytes.NewReader(b))
+	if err != nil {
+		t.Errorf("Cannot parse valid bibtex file %s: %v", ex, err)
+	}
+
+	// Check equality
+	AssertEntryListsEqual(t, expected.Entries, s.Entries)
+}
+
 // Tests that multiple parse returns different instances of the parsed BibTex.
 // Otherwise the number of entries will pile up. (Issue #4)
 func TestMultiParse(t *testing.T) {
