@@ -12,15 +12,15 @@ var parseField bool
 
 // scanner is a lexical scanner
 type scanner struct {
-	commentMode bool
-	ignoreMode  bool
-	r           *bufio.Reader
-	pos         tokenPos
+	commentMode  bool
+	outsideEntry bool
+	r            *bufio.Reader
+	pos          tokenPos
 }
 
 // newScanner returns a new instance of scanner.
 func newScanner(r io.Reader) *scanner {
-	return &scanner{ignoreMode: true, r: bufio.NewReader(r), pos: tokenPos{Char: 0, Lines: []int{}}}
+	return &scanner{outsideEntry: true, r: bufio.NewReader(r), pos: tokenPos{Char: 0, Lines: []int{}}}
 }
 
 // read reads the next rune from the buffered reader.
@@ -52,10 +52,10 @@ func (s *scanner) unread() {
 
 // Scan returns the next token and literal value.
 func (s *scanner) Scan() (tok token, lit string, err error) {
-	if s.ignoreMode {
+	if s.outsideEntry {
 		// Ordinary comment scanning, but without generating a token
 		s.scanCommentBody()
-		s.ignoreMode = false
+		s.outsideEntry = false
 	}
 	ch := s.read()
 	if isWhitespace(ch) {
@@ -97,7 +97,7 @@ func (s *scanner) Scan() (tok token, lit string, err error) {
 	case '}':
 		if parseField { // reset parseField if reached end of entry.
 			parseField = false
-			s.ignoreMode = true
+			s.outsideEntry = true
 		}
 		return tRBRACE, string(ch), nil
 	case '#':
