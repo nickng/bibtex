@@ -4,6 +4,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 
@@ -23,8 +24,9 @@ var (
 // Config holds a configuration for filtering rules.
 type Config struct {
 	BibType map[string]struct {
-		Required []string
-		Remove   []string
+		Required    []string
+		Remove      []string
+		FieldsOrder []string `toml:"fields_order"`
 	}
 }
 
@@ -55,14 +57,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	keyOrderByType := make(map[string][]string)
 	if *config != "" {
 		var conf Config
 		if _, err := toml.DecodeFile(*config, &conf); err != nil {
 			log.Fatalf("Cannot read config: %s", err)
 		}
 		filter(parsed, &conf)
+		for name, bt := range conf.BibType {
+			keyOrderByType[name] = bt.FieldsOrder
+		}
 	}
-	fmt.Fprintf(writer, parsed.PrettyString())
+	prettyPrintOverridingOrder(writer, parsed, keyOrderByType)
 }
 
 func filter(bib *bibtex.BibTex, conf *Config) {
@@ -79,5 +85,15 @@ func filter(bib *bibtex.BibTex, conf *Config) {
 				}
 			}
 		}
+	}
+}
+
+func prettyPrintOverridingOrder(w io.Writer, parsed *bibtex.BibTex, keyOrderByType map[string][]string) {
+	for _, entry := range parsed.Entries {
+		var opts []bibtex.PrettyStringOpt
+		if order, specified := keyOrderByType[entry.Type]; specified {
+			opts = append(opts, bibtex.WithKeyOrder(order))
+		}
+		fmt.Fprintf(w, entry.PrettyString(opts...))
 	}
 }
